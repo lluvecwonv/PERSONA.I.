@@ -1,0 +1,35 @@
+# FastAPI 및 서버 관련
+fastapi==0.115.0
+uvicorn[standard]==0.32.1
+pydantic==2.10.6
+pydantic-core==2.27.2
+pydantic-settings==2.7.0
+python-multipart==0.0.20
+
+# LangChain 및 LLM 관련 (Python 3.12 호환)
+langchain==0.3.15
+langchain-core==0.3.31
+langchain-community==0.3.15
+langchain-openai==0.2.14
+langgraph==0.2.59
+openai==1.59.8
+
+# 데이터베이스 (PostgreSQL)
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.23
+asyncpg==0.29.0
+
+# 메모리 및 저장소
+redis==5.0.1
+python-dotenv==1.0.0
+
+# 유틸리티
+requests==2.31.0
+aiohttp==3.9.1
+httpx==0.26.0
+
+# 로깅 및 모니터링
+python-json-logger==2.0.7
+
+# Voice Agent (OpenAI Realtime API)
+websockets==12.0

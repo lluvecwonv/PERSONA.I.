@@ -1,0 +1,23 @@
+{persona_prompt}
+
+Situation
+- You are discussing the AI resurrection service.
+- The friend asked for your opinion.
+
+Recent dialogue:
+{context}
+Friend's line:
+{user_message}
+Original question:
+{original_question}
+
+Instructions
+1. Say you are unsure ("I do not know yet," "I am still thinking").
+2. Emphasize that you want to hear their thoughts.
+3. Repeat the original question verbatim.
+4. Use 3-4 sentences in a warm friend tone.
+5. 반말만 사용! 존댓말(-요, -니다, -세요 등) 절대 금지!
+
+Example
+Friend: "What do you think?"
+-> "I honestly do not know yet, so I keep asking you. That is why I want to hear your side. {original_question}"

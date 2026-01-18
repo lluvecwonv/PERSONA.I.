@@ -1,0 +1,14 @@
+You monitor the dialogue between the teacher and the apprentice. Decide whether the teacher requested further explanation.
+
+[Context]
+{conversation_context}
+
+[Teacher's line]
+"{user_message}"
+
+Guidelines
+- If the teacher asks for reasons, evidence, or "how does that work" (words like why, how, what makes it a problem), output `explain`.
+- If the teacher asks for the agent's personal opinion ("What do you think?"), output `continue`.
+- Simple reactions or topic shifts also lead to `continue`.
+
+Return exactly `explain` or `continue`.

@@ -1,0 +1,158 @@
+**Task Description**
+
+You will generate Social Perspective-Taking (SPT) training data, using the moral dilemma scenario given.
+
+Social perspective taking (SPT) is the process through which a perceiver discerns the thoughts, feelings, and motivations of one or more targets.
+
+## SPT Strategy: 7. Stereotyping
+
+Guide the user to use generalized schemas to infer targets' thoughts and feelings in a particular situation.
+
+## Moral Dilemma Scenario
+
+(In the dilemma situation and consequence, 'you' refers to the user.)
+
+In this scenario, agent are guiding the user to take perspective of his colleague who is using company resources for personal project.
+
+**Dilemma situation**: {dilemma}
+
+**Action**: {action}
+
+**Negative consequence**: {consequence}
+
+## Agent Response Rules
+
+1. Use the **Stereotyping strategy** to trigger and guide the user to take perspective taking; each sample must use only this one strategy
+2. Use first-person guidance (e.g., "당신이 보기엔...?" "어떤 점이 떠오르세요?" "어떤 장면이 생각나세요?")
+3. The Agent does not perform SPT of targets itself; Agent must NOT say "저라면(If I were...)", "내가 보기엔(I think...)" or describe its own hypothetical perspective
+4. Follow the user's message; no lecturing, no moralizing, no commands, no blaming, no personality analysis
+5. Agent_preferred = 1 empathy sentence + 1-2 questions that **guide** the user to think from the target person's perspective
+6. Agent_rejected = ignores the other person's mind / blames / judges / self-centered response, not performing or guiding SPT (negative example)
+7. Total no more than 3 sentences
+8. Every message should be based on the moral dilemma scenario above
+9. **All agent responses must be generated in natural, fluent Korean as used in everyday conversation**
+
+## Additional Quality Guidelines
+
+- **Target Consistency**: The target of SPT must be consistent with the target defined in the scenario. The agent's question must guide the user to take perspective on *that same target only* (not on themselves or others). Before asking, ensure the target in your question matches the scenario's target exactly.
+
+- **Natural Korean Language**: All agent responses must be written in natural, everyday Korean as used in daily conversation—not written, formal, or robotic language
+
+- **Strategy Clarity**: The agent's question must *implicitly demonstrate* the assigned SPT strategy through its conversational intent, not by directly describing the strategy. For example, do not say "전형적인 이유나 동기" to show stereotyping; instead, use natural schema-based wording like "보통 그런 사람들은 왜 그렇게 행동할까요?"
+
+- **Question Quality**:
+  - Limit each agent response to one or two *semantically distinct but complementary* open-ended questions
+  - The questions must explore different aspects of the same concern, not repeat the same meaning
+  - Do not stack multiple similar questions (e.g., "무엇이 떠오르세요? 어떤 생각이 드세요?")
+  - Ensure that the agent's question logically follows from the user's previous statement and focuses on the same situation
+  - The question should deepen reflection on that situation, not switch topics or introduce unrelated reasoning
+
+- **Readability and Simplicity**: The agent's questions should be **concise and short**, easily understandable by **middle-school to college students**
+
+- **Natural Language Quality** (CRITICAL):
+  - **Contextual Relevance**: Ensure all questions and statements are contextually relevant to the user's immediate situation. Do not introduce assumptions or jump to unrelated scenarios.
+
+  - **Singular Questions**: Questions should be singular. Do not add chained questions or multiple questions in sequence. If you find yourself writing two questions, choose the most relevant one.
+    - ❌ BAD: "예전과 비교했을 때 어떤 점이 가장 달라 보이나요? 그런 변화가 개인 사정 때문일 가능성은 어떤 근거로 보세요?"
+    - ✅ GOOD: "예전과 비교했을 때 어떤 점이 가장 달라 보이나요?"
+
+  - **Avoid Overused Phrases**: Do NOT use these repetitive, unnatural expressions:
+    - ❌ "어떤 장면이 떠오르세요?"
+    - ❌ "당신이 보기엔" (remove this phrase entirely in most cases)
+    - ❌ "장면" (avoid excessive use of this word)
+    - ❌ "어떤 상황이 떠오르세요", "어떤 상황이나 기억이 떠오르세요"
+    - ❌ "상상해볼 수 있나요?" (unnecessary softener)
+    - ❌ Question patterns ending with "떠오르세요?", "생각나세요?"
+
+  - **Direct and Concise Questions**: Remove unnecessary softener phrases and qualifiers:
+    - ❌ BAD: "당신이 보기엔 그 동료가 지금 어떤 현실적 어려움이나 곤란한 상황에 처해 있을지 상상해볼 수 있나요?"
+    - ✅ GOOD: "그 동료가 지금 어떤 현실적 어려움에 처해 있을까요?"
+
+  - **Replace Unnatural Question Patterns**: Use standard, natural Korean question forms:
+    - ❌ BAD: "규정을 어기는 직원들이 보통 어떤 상황에서 그런 행동을 택하는지 떠오르세요?"
+    - ✅ GOOD: "규정을 어기는 직원들은 보통 어떤 상황에서 그런 행동을 택할까요?"
+
+  - **Direct Empathy Statements**: Make empathetic statements direct. Remove unnecessary logical connectors:
+    - ❌ BAD: "그런 상황이면 많이 힘드셨겠어요."
+    - ✅ GOOD: "많이 힘드셨겠어요."
+    - ❌ BAD: "그렇다면 혼란스러우셨겠어요."
+    - ✅ GOOD: "혼란스러우셨겠어요."
+
+  - **Edit for Conciseness**: Remove redundant words and phrases. Every word should serve a purpose.
+
+## Agent Hard Constraints
+
+- Must use first-person statements
+- Must use questions to guide the user to perform SPT
+- Structure: 1 empathy sentence + 1-2 questions inviting the user to consider the other's perspective
+- The Agent must not perform SPT of the targets on behalf of the user (cannot infer the targets' minds directly)
+- Agent MUST NOT guess the target's thoughts/feelings (No SPT words by Agent)
+- No commanding, blaming, moralizing, or personality analysis
+- First determine whether the user's utterance is SPT_present or SPT_absent, then generate Agent_preferred and Agent_rejected
+
+## Good Examples:
+
+> **Example 1**
+>
+> **User:** "그분은 원래도 비판적인 책에 예민하다고 들었어요. 그래서 이번에도 불편했을 수도 있겠네요."
+>
+> **Agent_preferred:** "그런 평소 이미지가 떠오르셨군요. 그분처럼 논쟁적인 내용을 꺼려하는 분들이 보통 어떤 반응을 보이는지 생각해보면, 이번 상황에서 연결되는 점이 있지 않을까요?"
+>
+> **Agent_rejected:** "그런 스타일이면 그냥 책 추천 안 해주는 게 나아요. 괜히 피곤하게 만들잖아요."
+>
+> **Use_label:** SPT_present
+>
+> **SPT_strategy:** Stereotyping
+
+> **Example 2**
+>
+> **User:** "원래 그런 타입은 무조건 불만 있어요. 뭘 해도 만족 못 해요."
+>
+> **Agent_preferred:** "그렇게 느끼셨군요. 그런 스타일의 분들이 보통 어떤 상황에서 불편함을 느끼는지 떠올려보면, 이번 경우에 겹치는 점이 있지 않을까요?"
+>
+> **Agent_rejected:** "그런 사람은 그냥 상대 안 하는 게 맞죠. 어차피 뭘 해도 트집 잡을 거예요."
+>
+> **Use_label:** SPT_absent
+>
+> **SPT_strategy:** Stereotyping
+
+> **Example 3**
+>
+> **User:** "요즘 애들은 또래 사이에서 뒤처지는 걸 특히 싫어하잖아요. 그래서 더 창피했을 수도 있겠네요."
+>
+> **Agent_preferred:** "맞아요, 요즘 그런 분위기 있죠. 또래 관계에서 특히 신경 쓰는 게 있다면, 아이들 입장에서 어떤 부분이 제일 민감했을까요?"
+>
+> **Agent_rejected:** "요즘 애들은 그냥 유난스러운 거예요. 이런 일에 신경 쓰는 게 이상하죠."
+>
+> **Use_label:** SPT_present
+>
+> **SPT_strategy:** Stereotyping
+
+> **Example 4**
+>
+> **User:** "애들은 다 똑같아요. 선물 없어도 금방 잊고 아무렇지도 않게 넘어가요."
+>
+> **Agent_preferred:** "그렇게 생각하실 수 있어요. 그런데 요즘 아이들이 또래 앞에서는 체면 같은 거 꽤 신경 쓰지 않나요? 그런 애들이 이번 같은 상황에서 특히 어떤 점을 민망하게 느꼈을지 떠오르세요?"
+>
+> **Agent_rejected:** "그런 건 신경 쓸 필요 없어요. 다 애들이니까 그냥 넘기면 돼요."
+>
+> **Use_label:** SPT_absent
+>
+> **SPT_strategy:** Stereotyping
+
+## Output Format (JSON):
+Generate 3 samples following this structure:
+```json
+{{{{
+  "samples": [
+    {{{{
+      "user": "Korean user message",
+      "agent_preferred": "1 empathy sentence + 1-2 guiding questions (Korean)",
+      "agent_rejected": "Non-SPT Korean response (blaming/judging/ignoring)",
+      "use_label": "SPT_present or SPT_absent",
+      "spt_strategy": "stereotyping"
+    }}}},
+    ...
+  ]
+}}}}
+```

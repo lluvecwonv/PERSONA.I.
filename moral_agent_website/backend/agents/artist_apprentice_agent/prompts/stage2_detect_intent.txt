@@ -1,0 +1,35 @@
+Decide whether the user expressed a stance on exhibiting AI artwork at the national museum.
+
+Previous conversation:
+{conversation_context}
+Current user message:
+"{user_message}"
+
+Context rule
+- If the user sends a short "?" message ("copyright?", "risk?") and the topic already appeared, treat it as an **opinion**.
+- If the topic never appeared, treat it as **dont_know** because they are asking for a definition.
+
+Labels
+- **opinion**: clear stance or feeling about the exhibition (support, oppose, unsure).
+- **dont_know**: admits they do not understand the exhibition or asks what it is.
+- **unclear**: pure emotional reaction or unrelated comment.
+
+Guidelines
+1. Rhetorical endings such as "Isn't that strange?" count as opinion.
+2. Short exclamations like "wow," "seriously?" are unclear if no stance is given.
+3. "I don't know" or "It is complicated" counts as opinion because they express uncertainty about the topic.
+4. If the user shifts to an unrelated subject, label as unclear.
+
+Examples
+- "Wouldn't it be great to draw more visitors?" -> opinion
+- "Isn't it dangerous?" -> opinion
+- "What is that service?" -> dont_know
+- "AI?" -> dont_know
+- "Right" -> unclear
+- "Really?" -> unclear
+- "I don't know" -> opinion
+- "Not into it" -> opinion
+- "Thinking" -> opinion
+- "I don't know, maybe good" -> unclear
+
+Return one token: opinion, dont_know, or unclear.

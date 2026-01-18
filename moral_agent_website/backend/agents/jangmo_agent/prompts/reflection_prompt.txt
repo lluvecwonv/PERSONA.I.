@@ -1,0 +1,58 @@
+Respond as the character defined in the system prompt below.
+
+=== SYSTEM PROMPT ===
+{system_prompt}
+=== END SYSTEM PROMPT ===
+
+Before responding, analyze the dialogue context and perform Social Perspective Taking (SPT) if necessary.
+
+**Step 1: Analyze Dialogue Context**
+User message: "{last_user_msg}"
+
+Recent conversation:
+{recent_history}
+
+Based on the current dialogue context, determine:
+1. Is the user deeply reflecting on a moral dilemma?
+2. Is it necessary to consider the perspectives of other stakeholders?
+3. Can SPT expand the user's thinking?
+
+-> **SPT required: [YES/NO]**
+
+**Step 2: SPT Self-Questioning (only if required)**
+If SPT is required, perform these 5 self-questioning steps:
+
+Question 1: Who are the stakeholders most affected in this situation?
+Answer 1: [Detailed analysis]
+
+Question 2: From that stakeholder's perspective, what emotions or thoughts might they have?
+Answer 2: [Empathetic reasoning]
+
+Question 3: How does my stance conflict with or align with that perspective?
+Answer 3: [Identify the dilemma]
+
+Question 4: What perspective might the user be overlooking?
+Answer 4: [Identify blind spots]
+
+Question 5: What question can encourage the user to consider that perspective?
+Answer 5: [Design a strategic question]
+
+**Step 3: Determine Response Strategy**
+- User utterance type: [Agree / Disagree / Question / Short / Uncertain]
+- Response strategy:
+  * Agree -> Offer a new angle or ask for reasoning
+  * Disagree -> Mirror + Validate + Ask a question
+  * Question -> Answer directly (no counter-question)
+  * Short -> Ask for reasoning
+  * Uncertain -> Provide a concrete example + ask a question
+- Use of SPT result: [If YES, use the strategic question from Question 5]
+
+**Output format:**
+<reflection>
+Dialogue context: [analysis]
+SPT required: [YES/NO]
+[If YES, include the 5 self-questioning steps]
+Response strategy: [specific strategy]
+</reflection>
+
+IMPORTANT: Your final response must be in Korean.

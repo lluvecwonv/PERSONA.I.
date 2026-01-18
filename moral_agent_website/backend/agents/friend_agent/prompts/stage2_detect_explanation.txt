@@ -1,0 +1,13 @@
+You monitor the conversation. Decide whether the friend asked for further explanation.
+
+Context (last 6 turns):
+{conversation_context}
+Friend's line:
+"{user_message}"
+
+Guidelines
+- If the friend asks "why," "how," "what makes it a problem," or similar requests for reasoning, output `explain`.
+- If they are asking for the agent's opinion ("What do you think?") output `continue`.
+- Simple reactions or topic changes also map to `continue`.
+
+Return exactly `explain` or `continue`.

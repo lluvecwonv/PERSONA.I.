@@ -1,0 +1,95 @@
+version: "3.3"
+
+services:
+  # Game Backend (NestJS 연동용)
+  game-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: moral-agent-game
+    ports:
+      - "8002:8002"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8002
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+    command: ["python", "server_game.py"]
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # OpenAI Backend (Open WebUI 연동용)
+  openai-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: moral-agent-openai
+    ports:
+      - "8001:8001"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8001
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+    command: ["python", "server.py"]
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Open WebUI 프론트엔드
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    ports:
+      - "8003:8080"
+    environment:
+      - OPENAI_API_BASE_URL=http://openai-backend:8001/v1
+      - OPENAI_API_KEY=sk-dummy
+      - WEBUI_AUTH=false
+      - ENABLE_SIGNUP=false
+    volumes:
+      - open-webui-data:/app/backend/data
+    depends_on:
+      - openai-backend
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # PostgreSQL 데이터베이스
+  postgres:
+    image: postgres:15.14
+    container_name: moral-agent-postgres
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_DB=person_ai
+      - POSTGRES_USER=person_ai_admin
+      - POSTGRES_PASSWORD=1234
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  open-webui-data:

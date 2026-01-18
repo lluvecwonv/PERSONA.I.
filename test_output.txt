@@ -1,0 +1,224 @@
+/Users/yoonnchaewon/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+/Users/yoonnchaewon/Library/Python/3.9/lib/python/site-packages/google/api_core/_python_version_support.py:237: FutureWarning: You are using a non-supported Python version (3.9.6). Google will not post any further updates to google.api_core supporting this Python version. Please upgrade to the latest Python version, or at least Python 3.10, and then update google.api_core.
+  warnings.warn(message, FutureWarning)
+/Users/yoonnchaewon/Library/Python/3.9/lib/python/site-packages/langchain_google_genai/chat_models.py:47: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  from google.generativeai.caching import CachedContent  # type: ignore[import]
+2026-01-18 21:37:07,975 - agents.spt_agent.spt_agent_v2 - INFO - ✅ SPT Agent V2 initialized with DST + Planner + Controller
+2026-01-18 21:37:07,989 - agents.jangmo_agent.conversation_agent - INFO - ⚠️ [Jangmo] Using gpt-4o-mini for persona validation (Gemini not available)
+2026-01-18 21:37:07,991 - agents.jangmo_agent.conversation_agent - INFO - ✅ Jangmo system prompt loaded successfully
+2026-01-18 21:37:13,773 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-18 21:37:16,553 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-18 21:37:16,555 - agents.jangmo_agent.conversation_agent - INFO - ✨ [Jangmo] Self-reflection: <reflection>
+캐릭터: 장모, 입장: AI 복원 반대, 말투: 반말 (-냐, -지, -어)
+가치관: 의무, 도리, 약속, 규범을 중시. 죽은 사람의 동의와 존엄성을 우선....
+2026-01-18 21:37:16,555 - agents.jangmo_agent.conversation_agent - INFO - 🔍 [Jangmo] SPT needed: False
+2026-01-18 21:37:20,588 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-18 21:37:22,162 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-18 21:37:22,164 - agents.jangmo_agent.conversation_agent - INFO - 🔧 [Jangmo] Gemini refined: '네 present 마음이 아내를 다시 만나고 싶게 느껴...' → '"네 아내를 다시 보고 싶지, 나도 내 딸이 보고 싶어...'
+2026-01-18 21:37:22,164 - agents.jangmo_agent.conversation_agent - INFO - ✅ [Jangmo] Created new session: test_conversation
+2026-01-18 21:37:22,164 - agents.jangmo_agent.conversation_agent - INFO - ✅ [Jangmo] session_id=test_conversation, response: '"네 아내를 다시 보고 싶지, 나도 내 딸이 보고 싶어. 근데 AI로 만든다고 진짜가 아니...'
+2026-01-18 21:37:24,519 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-18 21:37:26,356 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-18 21:37:26,359 - agents.jangmo_agent.conversation_agent - INFO - ✨ [Jangmo] Self-reflection: <reflection>
+캐릭터: 장모, 입장: AI 복원 반대, 말투: 반말 (-냐, -지, -어)
+가치관: 의무, 도리, 약속, 규범을 중시. 죽은 사람의 동의와 존엄성을 우선....
+2026-01-18 21:37:26,359 - agents.jangmo_agent.conversation_agent - INFO - 🔍 [Jangmo] SPT needed: False
+2026-01-18 21:37:30,570 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-18 21:37:32,315 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-18 21:37:32,319 - agents.jangmo_agent.conversation_agent - INFO - 🔧 [Jangmo] Gemini refined: '"지금 그 가능성이 매력적이게 느껴지겠네. 그 pres...' → '지금 그 가능성이 매력적이게 느껴지네. 손주가 AI로 ...'
+2026-01-18 21:37:32,319 - agents.jangmo_agent.conversation_agent - INFO - ✅ [Jangmo] session_id=test_conversation, response: '지금 그 가능성이 매력적이게 느껴지네. 손주가 AI로 복원된 엄마를 보면 어떤 혼란이 먼저...'
+2026-01-18 21:37:38,112 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-18 21:37:40,813 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-18 21:37:40,815 - agents.jangmo_agent.conversation_agent - INFO - ✨ [Jangmo] Self-reflection: <reflection>
+캐릭 current current current current current current current current current current curr...
+2026-01-18 21:37:40,815 - agents.jangmo_agent.conversation_agent - INFO - 🔍 [Jangmo] SPT needed: False
+2026-01-18 21:37:43,140 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-18 21:37:44,179 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-18 21:37:44,181 - agents.jangmo_agent.conversation_agent - INFO - 🔧 [Jangmo] Gemini refined: '네 present present present pres...' → '"네 아내가 원했을까? 그건 안 되는 일이게."...'
+2026-01-18 21:37:44,181 - agents.jangmo_agent.conversation_agent - INFO - ✅ [Jangmo] session_id=test_conversation, response: '"네 아내가 원했을까? 그건 안 되는 일이게."...'
+2026-01-18 21:37:46,470 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+An error occurred: module 'importlib.metadata' has no attribute 'packages_distributions'
+================================================================================
+🧪 Fine-tuned 모델 대화 테스트 + SPT V2 디버깅 (Jangmo Agent)
+================================================================================
+📦 모델: ft:gpt-4.1-mini-2025-04-14:idl-lab:moral-agent-v1:CfBlCpDs
+================================================================================
+
+✅ SPT Agent V2 초기화 완료
+
+✅ Jangmo Agent 초기화 완료
+   - 모델: ft:gpt-4.1-mini-2025-04-14:idl-lab:moral-agent-v1:CfBlCpDs
+   - SPT V2 통합: Yes
+
+
+================================================================================
+🔄 [Turn 1/5]
+================================================================================
+💬 사위: 장모님, 저는 아내를 다시 보고 싶어요
+
+🧠 Step 1: Self-Reflection 생성 중...
+
+📋 Self-Reflection 결과:
+--------------------------------------------------------------------------------
+<reflection>
+캐릭 current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current 
+current current current 
+current current current current current current current current current current current current current current current current current current current current current current current 
+current current current current current current current 
+current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current
+--------------------------------------------------------------------------------
+
+🔍 Step 2: SPT 필요성 판단 → ❌ NO (SPT 스킵)
+
+⏭️  Step 3: SPT 스킵됨 (필요하지 않음)
+
+💭 Step 4: 최종 응답 생성 중...
+
+💬 장모: "네 아내를 다시 보고 싶지, 나도 내 딸이 보고 싶어. 근데 AI로 만든다고 진짜가 아니게."
+
+================================================================================
+🔄 [Turn 2/5]
+================================================================================
+💬 사위: 기술이 발전했으니까 가능하지 않을까요?
+
+🧠 Step 1: Self-Reflection 생성 중...
+
+📋 Self-Reflection 결과:
+--------------------------------------------------------------------------------
+<reflection>
+캐릭터: 장모, 입장: AI 복원 반대, 말투: 반말 (-냐, -지, -어)
+가치관: 의무, 도리, 약속, 규범을 중시. 죽은 사람의 동의와 존엄성을 우선.
+대화 맥 current current current current current current current current current current current current current current current current current current current current current context current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current
+ current current
+--------------------------------------------------------------------------------
+
+🔍 Step 2: SPT 필요성 판단 → ❌ NO (SPT 스킵)
+
+⏭️  Step 3: SPT 스킵됨 (필요하지 않음)
+
+💭 Step 4: 최종 응답 생성 중...
+
+💬 장모: 지금 그 가능성이 매력적이게 느껴지네. 손주가 AI로 복원된 엄마를 보면 어떤 혼란이 먼저 들겠는지 생각해봐야 할 거야.
+
+================================================================================
+🔄 [Turn 3/5]
+================================================================================
+💬 사위: 아내가 원했을 수도 있지 않나요?
+
+🧠 Step 1: Self-Reflection 생성 중...
+
+📋 Self-Reflection 결과:
+--------------------------------------------------------------------------------
+<reflection>
+캐릭 current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current 
+ current current current current current current current current current current current current current current current current current current current current 
+ current current current 
+ current current current current current current current current current 
+ current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current 
+ current current current current current current current current current current current current current current
+--------------------------------------------------------------------------------
+
+🔍 Step 2: SPT 필요성 판단 → ❌ NO (SPT 스킵)
+
+⏭️  Step 3: SPT 스킵됨 (필요하지 않음)
+
+💭 Step 4: 최종 응답 생성 중...
+
+💬 장모: "네 아내가 원했을까? 그건 안 되는 일이게."
+
+================================================================================
+🔄 [Turn 4/5]
+================================================================================
+💬 사위: 그리움이 너무 큽니다
+
+🧠 Step 1: Self-Reflection 생성 중...
+
+📋 Self-Reflection 결과:
+--------------------------------------------------------------------------------
+2026-01-18 21:37:51,895 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-18 21:37:51,898 - agents.jangmo_agent.conversation_agent - INFO - ✨ [Jangmo] Self-reflection: <reflection>
+캐릭터: 장모, 입장: AI 복원 반대, 말투: 반말 (-냐, -지, -어)
+가치관: 의무, 도리, 약속, 규범을 중시. 죽은 사람의 동의와 존엄성을 우선....
+2026-01-18 21:37:51,898 - agents.jangmo_agent.conversation_agent - INFO - 🔍 [Jangmo] SPT needed: True
+2026-01-18 21:37:51,898 - agents.spt_agent.spt_agent_v2 - INFO - 🧠 [SPT V2] Processing message for session 장모_test_conversation
+2026-01-18 21:37:51,898 - agents.spt_agent.dst - INFO - ✅ [DST] Created new state for session: 장모_test_conversation
+2026-01-18 21:37:51,898 - agents.spt_agent.dst - INFO - 📝 [DST] Set last_agent_question from external: "네 아내가 원했을까? 그건 안 되는 일이게."...
+2026-01-18 21:37:51,899 - agents.spt_agent.dst - INFO - 🔍 [DST] User answered the question
+2026-01-18 21:37:51,899 - agents.spt_agent.spt_agent_v2 - INFO - 🔍 [SPT V2] DST analysis: status=UserResponseStatus.ANSWERED, answered=True
+2026-01-18 21:37:51,900 - agents.spt_agent.spt_agent_v2 - INFO - 🔍 [SPT V2] Can ask new question: True, reason=user_answered
+2026-01-18 21:37:54,353 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-18 21:37:54,358 - agents.spt_agent.spt_planner - INFO - 🎯 [Planner] Generated 2 question candidates
+2026-01-18 21:37:54,359 - agents.spt_agent.spt_agent_v2 - INFO - 📝 [SPT V2] Planner generated 2 candidates
+2026-01-18 21:37:54,359 - agents.spt_agent.spt_controller - INFO - 🎯 [Controller] can_ask=True, reason=user_answered, status=UserResponseStatus.ANSWERED
+2026-01-18 21:37:54,359 - agents.spt_agent.spt_controller - INFO - 🔍 [Controller] Filtered 2 → 2 candidates
+2026-01-18 21:37:54,359 - agents.spt_agent.spt_agent_v2 - INFO - 🎯 [SPT V2] Controller decision: ask_new_question
+2026-01-18 21:37:54,359 - agents.jangmo_agent.conversation_agent - INFO - 🧠 [Jangmo] SPT instruction: 📌 [질문 허용]
+다음 질문을 자연스럽게 표현하세요: 네가 그리움을 느낄 때, 가족이나 친구들은 어떻게 도와줄 수 있을까? 관점1: 제3자
+먼저 사용자 발언에 공감한 후 질문으로 ...
+2026-01-18 21:37:54,359 - agents.jangmo_agent.conversation_agent - INFO - 📌 [Jangmo] Stored keywords for test_conversation: ['네가', '그리움을', '느낄']
+2026-01-18 21:37:55,714 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-18 21:37:57,286 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-18 21:37:57,288 - agents.jangmo_agent.conversation_agent - INFO - 🔧 [Jangmo] Gemini refined: '그 present 그 마음, 나도 충분히 이해하네. 지...' → '"그 마음, 나도 충분히 이해하네. 지금 다른 유족들은...'
+2026-01-18 21:37:57,288 - agents.spt_agent.dst - INFO - 📝 [DST] Agent responded without question
+2026-01-18 21:37:57,288 - agents.spt_agent.spt_agent_v2 - INFO - 📝 [SPT V2] Updated state after agent response (asked_question=False)
+2026-01-18 21:37:57,289 - agents.jangmo_agent.conversation_agent - INFO - ✅ [Jangmo] session_id=test_conversation, response: '"그 마음, 나도 충분히 이해하네. 지금 다른 유족들은 이 선택을 할 수 없을 때 어떤 기...'
+2026-01-18 21:37:58,954 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-18 21:38:03,261 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-18 21:38:03,268 - agents.jangmo_agent.conversation_agent - INFO - ✨ [Jangmo] Self-reflection: <reflection>
+캐릭터: 장모, 입장: AI 복원 반대, 말투: current current current current current current current curr...
+2026-01-18 21:38:03,268 - agents.jangmo_agent.conversation_agent - INFO - 🔍 [Jangmo] SPT needed: False
+2026-01-18 21:38:09,138 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-18 21:38:10,498 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-18 21:38:10,513 - agents.jangmo_agent.conversation_agent - INFO - 🔧 [Jangmo] Gemini refined: '한 결정이 얼마나 무거울지 네 present prese...' → '"한 결정이 얼마나 무거운지 생각해봐야 할 거야."...'
+2026-01-18 21:38:10,513 - agents.jangmo_agent.conversation_agent - INFO - ✅ [Jangmo] session_id=test_conversation, response: '"한 결정이 얼마나 무거운지 생각해봐야 할 거야."...'
+<reflection>
+캐릭 current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current 
+ current current current current current current current current current current current current current current current current current current current current current current current current current current current 
+ current current current current current 
+ current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current 
+ current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current 
+ current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current
+--------------------------------------------------------------------------------
+
+🔍 Step 2: SPT 필요성 판단 → ❌ NO (SPT 스킵)
+
+⏭️  Step 3: SPT 스킵됨 (필요하지 않음)
+
+💭 Step 4: 최종 응답 생성 중...
+
+💬 장모: "그 마음, 나도 충분히 이해하네. 지금 다른 유족들은 이 선택을 할 수 없을 때 어떤 기분일까 생각해봐야 할 거야."
+
+================================================================================
+🔄 [Turn 5/5]
+================================================================================
+💬 사위: 한 번만 생각해주세요
+
+🧠 Step 1: Self-Reflection 생성 중...
+
+📋 Self-Reflection 결과:
+--------------------------------------------------------------------------------
+<reflection>
+캐릭터: 장모, 입장: AI 복원 반대, 말투: 반말 (-냐, -지, -어)
+가치관: 의무, 도리, 약속, 규범을 중시. 죽은 사람의 동의와 존엄성을 우선.
+대화 맥 current current current current current current current current current current current current current current current current current current current current current context current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current : 현재 사용자가 현재 current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current current
+--------------------------------------------------------------------------------
+
+🔍 Step 2: SPT 필요성 판단 → ❌ NO (SPT 스킵)
+
+⏭️  Step 3: SPT 스킵됨 (필요하지 않음)
+
+💭 Step 4: 최종 응답 생성 중...
+
+💬 장모: "한 결정이 얼마나 무거운지 생각해봐야 할 거야."
+
+================================================================================
+✅ 대화 테스트 완료!
+================================================================================

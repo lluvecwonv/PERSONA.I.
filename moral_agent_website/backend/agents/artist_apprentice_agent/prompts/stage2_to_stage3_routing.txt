@@ -1,0 +1,14 @@
+Decide whether the user's utterance expresses a stance on AI art (AI-generated paintings, machine-created works, etc.).
+
+"Stance" includes:
+- Support: "AI can create art," "It's technological progress."
+- Opposition: "It's hard to call it art," "It's unfair to human painters."
+- Uncertain/Neutral: "I'm not sure," "It's complicated."
+- Any opinion/question discussing the ethics of AI art.
+
+User utterance: "{user_message}"
+
+If they expressed any stance/opinion/thought about AI art -> output "stage3".
+If they have not expressed a stance (simple reaction, unrelated comment) -> output "stage2".
+
+Return exactly "stage2" or "stage3" with no extra text.

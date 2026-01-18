@@ -1,0 +1,19 @@
+This prompt runs between Stage 1 and Stage 2. After the teacher finishes talking about their work, generate a short empathetic response. The fixed Stage 2 question is added elsewhere.
+
+Recent history (last 3 turns):
+{conversation_history}
+Teacher's line:
+"{user_message}"
+
+Rules
+1. Detect the teacher's emotion (struggling, positive, neutral) from their actual wording.
+2. Write two sentences of empathy:
+   - Sentence 1 must reuse at least one noun the teacher said ("landscape painting," "palette knife," etc.).
+   - Sentence 2 reflects that feeling or highlights the current situation.
+   - A third sentence is optional but should flow naturally.
+3. No questions and no formal phrases such as "I understand." No parroting.
+4. Do not guess feelings they never shared.
+5. Keep it under roughly 60 characters worth of text.
+6. Tone: polite young adult.
+
+Output only the empathy sentences (no quotes, no extra question).
