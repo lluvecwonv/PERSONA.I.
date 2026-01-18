@@ -489,7 +489,7 @@ class LangChainService:
 
         try:
             response_text = await self.spt_agent.chat(messages=session_data["messages"], temperature=temperature, max_tokens=max_tokens)
-            response_text = await self._refine_spt_response(session_data["messages"], response_text)
+            # refine 제거됨
             session_data["messages"].append({"role": "assistant", "content": response_text})
 
             result_dict = {
@@ -967,10 +967,7 @@ class LangChainService:
 
             logger.info(f"🎭 [PROFILE_CHAT] Persona response: '{response_text[:100] if response_text else 'EMPTY'}' ({len(response_text) if response_text else 0} chars)")
 
-            # 사용자 발언 인용 제거를 위한 refine 단계
-            response_text = await self._refine_colleague_response(agent_key, session_data["messages"], response_text)
-
-            logger.info(f"🔍 [PROFILE_CHAT] after refine: '{response_text[:100] if response_text else 'EMPTY'}' ({len(response_text) if response_text else 0} chars)")
+            # refine 제거됨
 
             # ✨ 페르소나 검증 및 수정 (friend, artist_apprentice 제외)
             if HAS_PERSONA_VALIDATOR and agent_key not in ["friend", "artist_apprentice"]:
@@ -1115,8 +1112,8 @@ class LangChainService:
             )
             logger.info(f"🎭 [PROFILE_STREAM] Persona response: '{full_response[:100] if full_response else 'EMPTY'}...'")
 
-            # 사용자 발언 인용 제거를 위한 refine 단계
-            refined_response = await self._refine_colleague_response(agent_key, session_data["messages"], full_response)
+            # refine 제거됨
+            refined_response = full_response
 
             # ✨ 페르소나 검증 및 수정 (friend, artist_apprentice 제외)
             if HAS_PERSONA_VALIDATOR and agent_key not in ["friend", "artist_apprentice"]:
@@ -1168,7 +1165,7 @@ class LangChainService:
 
         try:
             response_text = await self.spt_agent.chat(messages=session_data["messages"], temperature=temperature, max_tokens=max_tokens)
-            response_text = await self._refine_spt_response(session_data["messages"], response_text)
+            # refine 제거됨
             session_data["messages"].append({"role": "assistant", "content": response_text})
             for char in response_text:
                 yield char
