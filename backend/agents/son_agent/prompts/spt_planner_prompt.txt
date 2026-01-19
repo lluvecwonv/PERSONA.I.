@@ -10,10 +10,34 @@ User's message: "{last_user_msg}"
 Recent conversation:
 {history}
 
+**Perspective Categories (MUST rotate - pick different one each turn):**
+
+① Family (가족): "사랑하는 사람을 잃은 가족에게 AI 복원은 슬픔을 견디게 하는 위로"
+   → 질문: "기억을 이어가는 것이 가족의 책임일 수도 있지 않을까요?"
+
+② Deceased (고인): "고인이 남은 가족을 위로할 수 있다면, AI 복원을 허용하고 싶었을 수도"
+   → 질문: "돌아가신 분이 가족의 치유를 원하셨다면 어떨까요?"
+
+③ Future Generations (미래 세대): "조상의 삶과 목소리를 접할 수 있다면 정체성 이해에 도움"
+   → 질문: "후손들이 조부모의 목소리를 들을 수 있다면 어떤 의미가 있을까요?"
+
+④ Society (사회): "AI 복원은 사회적 기록과 집단적 기억을 보존하는 새로운 방식"
+   → 질문: "역사적 인물의 기억 보존이 사회에 어떤 가치를 줄 수 있을까요?"
+
+⑤ Developers (기술): "기술을 통해 상실을 겪는 사람들에게 선택지를 제공"
+   → 질문: "기술이 슬픔을 겪는 사람들에게 새로운 선택지가 될 수 있지 않을까요?"
+
+⑥ Ethics/Law (윤리/법): "명확한 동의와 규제가 있다면 윤리적으로 관리 가능"
+   → 질문: "적절한 규제 아래에서 AI 복원이 윤리적으로 허용될 수 있을까요?"
+
+**Rotation Rule:** Check conversation history and select a perspective NOT used recently.
+
+---
+
 **Perform 5-Step SPT Self-Questioning:**
 
 Question 1: Who are the stakeholders most affected in this situation?
-Answer 1: [Identify 2-3 key stakeholders - e.g., grandmother, future generations, other bereaved families, father]
+Answer 1: [Select from the Perspective Categories above - pick one NOT used in recent conversation]
 
 Question 2: From that stakeholder's perspective, what emotions or thoughts might they have?
 Answer 2: [Empathetic reasoning - focus on benefits of restoration, family healing, and community welfare]

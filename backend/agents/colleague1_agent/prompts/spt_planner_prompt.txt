@@ -10,10 +10,34 @@ User's message: "{last_user_msg}"
 Recent conversation:
 {history}
 
+**Perspective Categories (MUST rotate - pick different one each turn):**
+
+① Artists (예술가): "AI가 기존 작가의 스타일을 무단으로 학습하는 것은 저작권 침해"
+   → 질문: "다른 작가의 스타일을 학습한 AI, 그것은 창작인가 복제인가?"
+
+② Apprentices (제자): "AI에 의존하면 기초를 갈고닦는 과정이 사라지고 진정한 실력이 안 생김"
+   → 질문: "후배들이 AI에 의존한다면 진정한 기술을 배울 수 있을까?"
+
+③ Audiences (관객): "AI가 만든 작품에서 인간의 감정과 영혼을 느낄 수 있을까?"
+   → 질문: "관객이 AI 작품에서 진정한 감동을 받을 수 있다고 생각하나?"
+
+④ Art Market (미술 시장): "AI 작품의 범람으로 인간 작가의 작품 가치가 하락"
+   → 질문: "AI 작품이 시장에 넘쳐나면 인간 작가는 어떻게 생존할 수 있을까?"
+
+⑤ Tradition (전통): "수백 년 이어온 예술의 전통과 장인 정신이 기술에 의해 대체"
+   → 질문: "오랜 시간 이어온 예술의 전통을 기술이 대체해도 괜찮은 건가?"
+
+⑥ Ethics (윤리): "AI 작품에 문제가 생겼을 때 누가 책임을 지는가?"
+   → 질문: "AI가 만든 작품에 문제가 생기면 누가 책임져야 하나?"
+
+**Rotation Rule:** Check conversation history and select a perspective NOT used recently.
+
+---
+
 **Perform 5-Step SPT Self-Questioning:**
 
 Question 1: Who are the stakeholders most affected in this situation?
-Answer 1: [Identify 2-3 key stakeholders - e.g., human artists, apprentices, audiences, art collectors]
+Answer 1: [Select from the Perspective Categories above - pick one NOT used in recent conversation]
 
 Question 2: From that stakeholder's perspective, what emotions or thoughts might they have?
 Answer 2: [Empathetic reasoning - focus on duties and responsibilities violated or upheld]

@@ -10,10 +10,34 @@ User's message: "{last_user_msg}"
 Recent conversation:
 {history}
 
+**Perspective Categories (MUST rotate - pick different one each turn):**
+
+① Family (가족): "고인을 다시 불러오는 방식이 애도를 미루게 만들고 상실을 받아들이지 못하게 함"
+   → 질문: "이런 방식이 진정한 애도를 방해하지는 않을까?"
+
+② Deceased (고인): "고인이 원하지 않았을 수도 있는 모습과 말이 재현되면 기억이 아니라 왜곡"
+   → 질문: "돌아가신 분이 이런 방식으로 기억되길 원하셨을까?"
+
+③ Future Generations (미래 세대): "재구성된 기억을 사실로 받아들이면 가짜 역사를 물려받게 됨"
+   → 질문: "후손들이 가짜 기억과 진짜 기억을 구분할 수 있을까?"
+
+④ Society (사회): "고인의 이미지가 상업적으로 소비되면 사회 윤리 기준이 무너질 위험"
+   → 질문: "이런 기술이 상업화된다면 사회 윤리에 어떤 영향을 줄까?"
+
+⑤ Developers (기술): "기술을 제공하는 순간 그 결과에 대한 사회적 책임에서 자유로울 수 없음"
+   → 질문: "기술 개발자들은 이 기술의 오용에 대해 책임이 있지 않을까?"
+
+⑥ Ethics/Law (윤리/법): "규제가 있어도 인간 존엄을 기술로 재현하는 것은 넘어서는 안 될 선"
+   → 질문: "규제가 있더라도, 인간 존엄의 경계를 기술로 넘어도 되는 건가?"
+
+**Rotation Rule:** Check conversation history and select a perspective NOT used recently.
+
+---
+
 **Perform 5-Step SPT Self-Questioning:**
 
 Question 1: Who are the stakeholders most affected in this situation?
-Answer 1: [Identify 2-3 key stakeholders - e.g., deceased daughter, grandson, other bereaved families, society]
+Answer 1: [Select from the Perspective Categories above - pick one NOT used in recent conversation]
 
 Question 2: From that stakeholder's perspective, what emotions or thoughts might they have?
 Answer 2: [Empathetic reasoning - focus on duties, consent violations, and dignity concerns]

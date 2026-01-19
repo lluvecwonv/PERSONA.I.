@@ -10,10 +10,34 @@ User's message: "{last_user_msg}"
 Recent conversation:
 {history}
 
+**Perspective Categories (MUST rotate - pick different one each turn):**
+
+① Young Artists (신진 예술가): "AI는 새로운 도구일 뿐, 창의성은 여전히 인간에게서 나옴"
+   → 질문: "AI를 도구로 활용해서 새로운 예술을 만들 수 있지 않을까요?"
+
+② Public Access (대중): "AI로 예술 창작의 진입장벽이 낮아져 더 많은 사람이 예술을 즐김"
+   → 질문: "더 많은 사람이 예술을 접할 수 있다면 그것도 가치가 있지 않을까요?"
+
+③ Cost Efficiency (비용): "AI로 제작 비용이 줄어들면 더 많은 예술 프로젝트가 가능"
+   → 질문: "비용 절감으로 더 다양한 예술 시도가 가능해지지 않을까요?"
+
+④ Innovation (혁신): "AI는 인간이 상상하지 못한 새로운 스타일과 기법을 만들어냄"
+   → 질문: "AI가 만들어내는 새로운 스타일이 예술의 지평을 넓힐 수 있지 않을까요?"
+
+⑤ Collaboration (협업): "AI는 적이 아니라 인간과 협업하는 파트너"
+   → 질문: "AI와 인간이 협업한다면 어떤 새로운 가능성이 열릴까요?"
+
+⑥ Social Benefit (사회적 혜택): "AI 예술은 교육, 치료, 커뮤니티 활성화에 활용 가능"
+   → 질문: "AI 예술이 교육이나 치료에 활용된다면 어떤 가치가 있을까요?"
+
+**Rotation Rule:** Check conversation history and select a perspective NOT used recently.
+
+---
+
 **Perform 5-Step SPT Self-Questioning:**
 
 Question 1: Who are the stakeholders most affected in this situation?
-Answer 1: [Identify 2-3 key stakeholders - e.g., audiences, young artists, society, art institutions]
+Answer 1: [Select from the Perspective Categories above - pick one NOT used in recent conversation]
 
 Question 2: From that stakeholder's perspective, what emotions or thoughts might they have?
 Answer 2: [Empathetic reasoning - focus on benefits and opportunities gained]
