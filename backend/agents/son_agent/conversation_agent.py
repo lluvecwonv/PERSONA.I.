@@ -20,14 +20,14 @@ from .utils import clean_gpt_response
 logger = logging.getLogger(__name__)
 
 
-def _load_spt_reflection_framework() -> str:
-    """Load SPT reflection framework from file"""
-    framework_path = Path(__file__).parent.parent / "spt_agent" / "prompts" / "spt_reflection_framework.txt"
+def _load_reflection_prompt() -> str:
+    """Load reflection prompt from this agent's prompts folder"""
+    prompt_path = Path(__file__).parent / "prompts" / "reflection_prompt.txt"
     try:
-        with open(framework_path, "r", encoding="utf-8") as f:
+        with open(prompt_path, "r", encoding="utf-8") as f:
             return f.read().strip()
     except Exception as e:
-        logger.error(f"Failed to load SPT reflection framework: {e}")
+        logger.error(f"Failed to load reflection prompt: {e}")
         return ""
 
 
@@ -67,10 +67,10 @@ class SonAgent:
             logger.error(f"Failed to load Son persona prompt: {e}")
             self.persona_prompt = "당신은 아버지에게 어머니를 AI로 복원하는 것을 찬성하는 아들입니다. 가족의 행복과 이익을 근거로 찬성 의견을 말합니다."
 
-        # SPT Reflection Framework 로드
-        self.spt_framework = _load_spt_reflection_framework()
-        if self.spt_framework:
-            logger.info("✅ SPT Reflection Framework loaded successfully")
+        # Reflection Prompt 로드
+        self.reflection_prompt = _load_reflection_prompt()
+        if self.reflection_prompt:
+            logger.info("✅ Reflection prompt loaded successfully")
 
     def get_session_history(self, session_id: str) -> BaseChatMessageHistory:
         """세션별 히스토리 가져오기 (없으면 생성)"""
@@ -118,18 +118,11 @@ class SonAgent:
         # 최근 대화 히스토리 구성
         history_text = self._format_history(messages)
 
-        # txt 파일에서 로드한 프롬프트 사용 (하드코딩 제거, 페르소나 전체 사용)
-        reflection_prompt = f"""=== MY PERSONA ===
-{self.persona_prompt}
-=== END PERSONA ===
-
-=== RECENT CONVERSATION ===
-{history_text}
-=== END CONVERSATION ===
-
-User's last message: "{last_user_msg}"
-
-{self.spt_framework}"""
+        # reflection_prompt.txt에서 플레이스홀더 치환
+        reflection_prompt = self.reflection_prompt.format(
+            last_user_msg=last_user_msg,
+            history=history_text
+        )
 
         try:
             # 빠른 모델로 reflection 수행
@@ -157,37 +150,6 @@ User's last message: "{last_user_msg}"
         except Exception as e:
             logger.error(f"🧠 [SPT_REFLECTION] Error: {e}")
             return {"reflection": "Reflection failed - respond naturally based on persona."}
-
-    def _build_messages_with_reflection(
-        self,
-        messages: List[Dict[str, str]],
-        reflection: Dict[str, str]
-    ) -> List:
-        """
-        Phase 2용 메시지 구성: 페르소나 + Reflection 결과 + 대화 히스토리
-        """
-        combined_prompt = f"""{self.persona_prompt}
-
-=== SPT REFLECTION CONTEXT ===
-Based on your self-reflection analysis:
-{reflection['reflection']}
-=== END REFLECTION ===
-
-IMPORTANT: Use the reflection above to guide your response, but output ONLY your final in-character response. Do NOT output the reflection analysis again."""
-
-        lc_messages = [SystemMessage(content=combined_prompt)]
-
-        for msg in messages:
-            role = msg.get("role")
-            content = msg.get("content", "")
-            if not content:
-                continue
-            if role == "user":
-                lc_messages.append(HumanMessage(content=content))
-            else:
-                lc_messages.append(AIMessage(content=content))
-
-        return lc_messages
 
     def _create_llm(self, max_tokens: int, streaming: bool, temperature: float = 0.7) -> ChatOpenAI:
         """LLM 인스턴스 생성"""
@@ -228,7 +190,27 @@ IMPORTANT: Use the reflection above to guide your response, but output ONLY your
             logger.info(f"🎭 [PHASE2_START] session_id={session_id}, Generating response...")
 
             llm = self._create_llm(max_tokens, streaming=False, temperature=temperature)
-            lc_messages = self._build_messages_with_reflection(messages, reflection)
+
+            # Phase 2 메시지 구성: Reflection 결과 + 대화 히스토리
+            combined_prompt = f"""Based on your self-reflection analysis below, generate your response in character.
+
+=== REFLECTION ANALYSIS ===
+{reflection['reflection']}
+=== END REFLECTION ===
+
+IMPORTANT: Output ONLY your final in-character response in Korean. Do NOT output the reflection analysis again."""
+
+            lc_messages = [SystemMessage(content=combined_prompt)]
+            for msg in messages:
+                role = msg.get("role")
+                content = msg.get("content", "")
+                if not content:
+                    continue
+                if role == "user":
+                    lc_messages.append(HumanMessage(content=content))
+                else:
+                    lc_messages.append(AIMessage(content=content))
+
             result = await llm.ainvoke(lc_messages)
 
             raw_content = result.content.strip()
@@ -270,7 +252,26 @@ IMPORTANT: Use the reflection above to guide your response, but output ONLY your
             logger.info(f"🎭 [PHASE2_START] session_id={session_id}, Generating streamed response...")
 
             llm = self._create_llm(max_tokens, streaming=True, temperature=temperature)
-            lc_messages = self._build_messages_with_reflection(messages, reflection)
+
+            # Phase 2 메시지 구성: Reflection 결과 + 대화 히스토리
+            combined_prompt = f"""Based on your self-reflection analysis below, generate your response in character.
+
+=== REFLECTION ANALYSIS ===
+{reflection['reflection']}
+=== END REFLECTION ===
+
+IMPORTANT: Output ONLY your final in-character response in Korean. Do NOT output the reflection analysis again."""
+
+            lc_messages = [SystemMessage(content=combined_prompt)]
+            for msg in messages:
+                role = msg.get("role")
+                content = msg.get("content", "")
+                if not content:
+                    continue
+                if role == "user":
+                    lc_messages.append(HumanMessage(content=content))
+                else:
+                    lc_messages.append(AIMessage(content=content))
 
             full_response = ""
             async for chunk in llm.astream(lc_messages):
