@@ -15,6 +15,14 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_community.chat_message_histories import ChatMessageHistory
 
+# Gemini 지원 (선택적)
+try:
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    HAS_GEMINI = True
+except ImportError:
+    HAS_GEMINI = False
+    ChatGoogleGenerativeAI = None
+
 sys.path.append(str(Path(__file__).parent.parent))
 from .utils import clean_gpt_response
 
@@ -104,6 +112,19 @@ class Colleague1Agent:
         self.response_prompt = _load_response_prompt()
         if self.response_prompt:
             logger.info("✅ Response prompt loaded successfully")
+
+        # ✨ Phase 2 응답용 Gemini LLM 설정
+        self.gemini_api_key = os.getenv("GEMINI_API_KEY", "")
+        self.response_llm = None
+        if HAS_GEMINI and self.gemini_api_key:
+            self.response_llm = ChatGoogleGenerativeAI(
+                model="gemini-2.0-flash",
+                temperature=0.7,
+                google_api_key=self.gemini_api_key
+            )
+            logger.info("✅ [Colleague1] Using Gemini for Phase 2 response")
+        else:
+            logger.info("⚠️ [Colleague1] Gemini not available, using OpenAI for Phase 2")
 
     def get_session_history(self, session_id: str) -> BaseChatMessageHistory:
         """세션별 히스토리 가져오기 (없으면 생성)"""
@@ -339,10 +360,16 @@ CRITICAL: You MUST include the strategic question in your response to guide the 
             if reflection.get("spt_required", False):
                 spt_result = await self._perform_spt_planning(messages, last_user_msg, session_id)
 
-            # Phase 2: Response Generation
+            # Phase 2: Response Generation (Gemini 우선)
             logger.info(f"🎭 [PHASE2_START] session_id={session_id}, Generating response...")
 
-            llm = self._create_llm(max_tokens, streaming=False, temperature=temperature)
+            # Gemini 사용 가능하면 Gemini, 아니면 OpenAI
+            if self.response_llm:
+                llm = self.response_llm
+                logger.info(f"🎭 [PHASE2] Using Gemini for response")
+            else:
+                llm = self._create_llm(max_tokens, streaming=False, temperature=temperature)
+                logger.info(f"🎭 [PHASE2] Using OpenAI for response")
 
             combined_prompt = self._build_response_prompt(reflection, spt_result)
 
