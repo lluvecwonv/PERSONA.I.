@@ -29,7 +29,7 @@ except ImportError:
     from exceptions import APIKeyNotFoundError, ChainExecutionError
 from agents.artist_apprentice_agent.conversation_agent import ConversationAgent as ArtistApprenticeAgent
 from agents.friend_agent.conversation_agent import ConversationAgent as FriendAgent
-from agents.spt_agent import SPTAgent
+from agents.spt_agent import SPTAgent, SPTAgentV2
 from agents.colleague1_agent import Colleague1Agent
 from agents.colleague2_agent import Colleague2Agent
 
@@ -94,11 +94,12 @@ class LangChainService:
 
         self.artist_apprentice_agent = ArtistApprenticeAgent(api_key=api_key, model="gpt-4o")
         self.friend_agent = FriendAgent(api_key=api_key, model="gpt-4o")
-        self.spt_agent = SPTAgent(api_key=api_key)  # fine-tuned 모델: ft:gpt-4.1-mini-2025-04-14:idl-lab:moral-agent-v1:CfBlCpDs
-        self.colleague1_agent = Colleague1Agent(api_key=api_key, model="gpt-4o")
-        self.colleague2_agent = Colleague2Agent(api_key=api_key, model="gpt-4o")
-        self.jangmo_agent = JangmoAgent(api_key=api_key, model="gpt-4o") if HAS_JANGMO else None
-        self.son_agent = SonAgent(api_key=api_key, model="gpt-4o") if HAS_SON else None
+        self.spt_agent = SPTAgent(api_key=api_key)
+        self.spt_agent_v2 = SPTAgentV2(api_key=api_key)
+        self.colleague1_agent = Colleague1Agent(api_key=api_key, model="gpt-4o", spt_agent_v2=self.spt_agent_v2)
+        self.colleague2_agent = Colleague2Agent(api_key=api_key, model="gpt-4o", spt_agent_v2=self.spt_agent_v2)
+        self.jangmo_agent = JangmoAgent(api_key=api_key, model="gpt-4o", spt_agent_v2=self.spt_agent_v2) if HAS_JANGMO else None
+        self.son_agent = SonAgent(api_key=api_key, model="gpt-4o", spt_agent_v2=self.spt_agent_v2) if HAS_SON else None
 
         self.agent = self.artist_apprentice_agent
         self.openai_client = AsyncOpenAI(api_key=api_key)
@@ -937,38 +938,11 @@ class LangChainService:
             logger.info(f"🔍 [PROFILE_CHAT] msg[{idx}]: role={role}, content='{content}...'")
 
         try:
-            # ✨ Step 1: SPT 에이전트로 도덕적 추론 생성 (이전 주장 포함하여 반복 방지)
-            logger.info(f"🧠 [PROFILE_CHAT] Step 1: Calling SPT agent for moral reasoning...")
+            # ✨ Persona 에이전트 호출 (SPT V2가 내부에서 자동 호출됨)
+            logger.info(f"🎭 [PROFILE_CHAT] Calling persona agent ({agent_key}) with integrated SPT V2...")
 
-            spt_messages = session_data["messages"].copy()
-            disable_response_type = agent_key in {"colleague1", "colleague2", "jangmo", "son"}
-
-            spt_draft = await self.spt_agent.chat(
-                messages=spt_messages,
-                temperature=0.7,
-                max_tokens=300,
-                use_response_type=not disable_response_type
-            )
-            logger.info(f"🧠 [PROFILE_CHAT] SPT draft: '{spt_draft if spt_draft else 'EMPTY'}'")
-            # ✨ Step 3: 페르소나 에이전트로 정제 (SPT 초안을 강력한 지시로 전달)
-            logger.info(f"🎭 [PROFILE_CHAT] Step 2: Calling persona agent ({agent_key}) for refinement...")
-            refinement_messages = session_data["messages"][:-1].copy()  # 마지막 user 메시지 제외
-
-            # SPT draft를 "지시"로 승격 (참고 → 필수 표현)
-            spt_instruction = (
-                f"📌 필수 지시사항:\n"
-                f"1. 다음 관점을 당신의 말투로 반드시 표현하세요: {spt_draft}\n"
-                f"2. 사용자 발화에 직접 반응하는 질문을 던지세요.\n"
-                f"3. 같은 주장을 반복하지 마세요.\n"
-                f"4. 반드시 한국어로 답하세요."
-            )
-
-            refinement_messages.append({
-                "role": "user",
-                "content": f"{message}\n\n{spt_instruction}"
-            })
             response_text = await agent.chat(
-                messages=refinement_messages,
+                messages=session_data["messages"],
                 temperature=temperature,
                 max_tokens=max_tokens,
                 session_id=session_id
@@ -1063,37 +1037,11 @@ class LangChainService:
             max_tokens = 300
 
         try:
-            # ✨ Step 1: SPT 에이전트로 도덕적 추론 생성 (이전 주장 포함하여 반복 방지)
-            logger.info(f"🧠 [PROFILE_STREAM] Step 1: Calling SPT agent for moral reasoning...")
+            # ✨ Persona 에이전트 호출 (SPT V2가 내부에서 자동 호출됨)
+            logger.info(f"🎭 [PROFILE_STREAM] Calling persona agent ({agent_key}) with integrated SPT V2...")
 
-            spt_messages = session_data["messages"].copy()
-            disable_response_type = agent_key in {"colleague1", "colleague2", "jangmo", "son"}
-            spt_draft = await self.spt_agent.chat(
-                messages=spt_messages,
-                temperature=0.7,
-                max_tokens=300,
-                use_response_type=not disable_response_type
-            )
-            logger.info(f"🧠 [PROFILE_STREAM] SPT draft: '{spt_draft if spt_draft else 'EMPTY'}'")
-
-            # ✨ Step 3: 페르소나 에이전트로 정제 (SPT 초안을 강력한 지시로 전달)
-            logger.info(f"🎭 [PROFILE_STREAM] Step 2: Calling persona agent ({agent_key}) for refinement...")
-            refinement_messages = session_data["messages"][:-1].copy()  # 마지막 user 메시지 제외
-
-            # SPT draft를 "지시"로 승격 (참고 → 필수 표현)
-            spt_instruction = (
-                f"📌 필수 지시사항:\n"
-                f"1. 다음 관점을 당신의 말투로 반드시 표현하세요: {spt_draft}\n"
-                f"2. 사용자 발화에 직접 반응하는 질문을 던지세요.\n"
-                f"3. 같은 주장을 반복하지 마세요."
-            )
-
-            refinement_messages.append({
-                "role": "user",
-                "content": f"{message}\n\n{spt_instruction}"
-            })
             full_response = await agent.chat(
-                messages=refinement_messages,
+                messages=session_data["messages"],
                 temperature=temperature,
                 max_tokens=max_tokens,
                 session_id=session_id
