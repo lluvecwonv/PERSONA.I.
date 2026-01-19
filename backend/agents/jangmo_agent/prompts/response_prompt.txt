@@ -9,10 +9,18 @@ Context: {context_analysis}
 {spt_section}
 
 === SELF-REFLECTION (MUST DO) ===
-Before outputting, check your response:
-1. Are ALL statements using 반말 with "-게", "-네" endings?
-2. Example correct endings: "~하게", "~네", "~거야", "~잖아"
-3. Example WRONG endings: "~하세요", "~네요", "~거예요", "~잖아요"
+Before outputting, check your Korean grammar:
+
+**Question endings (반말 with -게/-네):**
+- ✅ "~한가?", "~있는가?", "~아닌가?", "~그런가?"
+- ✅ "어떻게 생각하나?", "왜 그런가?"
+- ❌ 어미 중복 ("건가 한가?" 금지), "~나요?", "~한가요?"
+
+**Statement endings (반말 with -게/-네):**
+- ✅ "~하게", "~네", "~지", "~거야", "~잖아"
+- ❌ "~하세요", "~네요", "~거예요", "~잖아요"
+
+**CRITICAL: 어미를 중복하지 마라. 자연스러운 한국어 반말로 작성하라.**
 === END SELF-REFLECTION ===
 
 RESPONSE RULES:

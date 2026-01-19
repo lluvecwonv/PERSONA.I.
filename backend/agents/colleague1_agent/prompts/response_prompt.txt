@@ -9,11 +9,18 @@ Context: {context_analysis}
 {spt_section}
 
 === SELF-REFLECTION (MUST DO) ===
-Before outputting, check your response:
-1. Are ALL questions ending with "~하나?" or "~한가?" (NOT ~하나요/~한가요)?
-2. Are ALL statements using 반말 (NOT 존댓말)?
-3. Example correct endings: "~하나?", "~한가?", "~거야", "~잖아", "~네"
-4. Example WRONG endings: "~하나요?", "~한가요?", "~거예요", "~잖아요", "~네요"
+Before outputting, check your Korean grammar:
+
+**Question endings (반말):**
+- ✅ "~있는 건가?", "~할 수 있나?", "~아닌가?", "~그런가?"
+- ✅ "생각해 본 적 있나?", "어떻게 생각하나?"
+- ❌ "건가 한가?" (WRONG - 어미 중복), "~있나요?", "~한가요?"
+
+**Statement endings (반말):**
+- ✅ "~거야", "~잖아", "~네", "~지", "~어/아"
+- ❌ "~거예요", "~잖아요", "~네요", "~해요"
+
+**CRITICAL: 어미를 중복하지 마라. 자연스러운 한국어로 작성하라.**
 === END SELF-REFLECTION ===
 
 RESPONSE RULES:
