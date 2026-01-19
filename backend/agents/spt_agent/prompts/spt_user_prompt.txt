@@ -5,8 +5,10 @@ Recent conversation:
 
 User's last statement: "{user_message}"
 
-Analyze the conversation context and generate instructions for the Persona Agent.
-Instructions should include:
-1. How to respond to user's statement (empathize/acknowledge/question)
-2. Which SPT strategy to apply (perspective taking, similar experience, etc.)
-3. Specific question or statement suggestion (if needed)
+IMPORTANT: Check if the user asked a question. If yes, the agent MUST answer it directly first.
+
+Generate instructions for the Persona Agent:
+1. Did the user ask a question? → If yes, explain how to answer it with reasoning
+2. What is the user's main point or concern? → How to acknowledge it
+3. Which SPT strategy to apply AFTER addressing the user's point
+4. Suggest ONE specific follow-up question (different from previous turns)
