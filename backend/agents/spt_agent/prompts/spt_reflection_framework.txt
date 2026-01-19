@@ -1,18 +1,28 @@
-Before responding, analyze the dialogue context and perform Social Perspective Taking (SPT) if necessary.
+Before responding, analyze the dialogue context to determine if Social Perspective Taking (SPT) is needed.
 
-**Step 1: Analyze Dialogue Context**
+**Step 1: SPT Necessity Check**
 
-Based on the current dialogue context, determine:
+Based on the dialogue, answer:
 1. Is the user deeply reflecting on a moral dilemma?
-2. Is it necessary to consider the perspectives of other stakeholders?
+2. Is it necessary to consider other stakeholders' perspectives?
 3. Can SPT expand the user's thinking?
+
 → **SPT required: [YES/NO]**
 
-**Step 2: SPT Self-Questioning (only if required)**
-If SPT is required, perform these 5 self-questioning steps:
+---
+
+**IF SPT required = NO:**
+Skip to Step 3. Do NOT perform Step 2.
+
+**IF SPT required = YES:**
+Proceed to Step 2.
+
+---
+
+**Step 2: SPT Self-Questioning (ONLY if SPT = YES)**
 
 Question 1: Who are the stakeholders most affected in this situation?
-Answer 1: [Detailed analysis]
+Answer 1: [Analysis]
 
 Question 2: From that stakeholder's perspective, what emotions or thoughts might they have?
 Answer 2: [Empathetic reasoning]
@@ -24,17 +34,19 @@ Question 4: What perspective might the user be overlooking?
 Answer 4: [Identify blind spots]
 
 Question 5: What question can encourage the user to consider that perspective?
-Answer 5: [Design a strategic question]
+Answer 5: [Strategic question]
 
-**Step 3: Determine Response Strategy**
+---
+
+**Step 3: Response Strategy**
 
 - User utterance type: [Agree / Disagree / Question / Short / Uncertain]
-- Response strategy:
+- Strategy:
     - Agree → Offer a new angle or ask for reasoning
     - Disagree → Mirror + Validate + Ask a question
-    - Question → Answer directly (no counter-question first)
+    - Question → Answer directly first
     - Short → Ask for reasoning
-    - Uncertain → Provide a concrete example + ask a question
-- Use of SPT result: [If YES, use the strategic question from Question 5]
+    - Uncertain → Provide example + ask a question
+- If SPT = YES, use Question 5's strategic question
 
-IMPORTANT: This reflection must happen internally. Do NOT output this analysis. Only output your final response in character.
+IMPORTANT: Output this analysis. Do NOT output your final response here.

@@ -1,7 +1,7 @@
 """
 Colleague2 Agent (후배 화가 - 공리주의적 관점, AI 예술 찬성)
 LangChain 기반 대화 에이전트
-✨ SPT Reflection Framework 통합 (별도 SPT Agent 없음)
+✨ Two-Phase SPT Reflection (자기 인식 → 응답 생성)
 """
 from typing import List, Dict, Any, Optional
 from pathlib import Path
@@ -36,7 +36,7 @@ class Colleague2Agent:
     후배 화가 대화 에이전트 (AI 예술 찬성 - 공리주의적 관점)
     - LangChain ChatOpenAI 사용
     - 30대 초반 남성 후배 화가 캐릭터
-    - ✨ SPT Reflection Framework 직접 통합 (별도 SPT Agent 없음)
+    - ✨ Two-Phase SPT: 자기 인식 → 응답 생성
     - 선배에게 존댓말 사용
     """
 
@@ -87,17 +87,93 @@ class Colleague2Agent:
             return True
         return False
 
-    def _build_messages(self, messages: List[Dict[str, str]]) -> List:
+    def _format_history(self, messages: List[Dict[str, str]], limit: int = 12) -> str:
+        """대화 히스토리를 텍스트로 포맷팅"""
+        if not messages:
+            return "(No previous conversation)"
+
+        recent = messages[-limit:] if len(messages) > limit else messages
+        lines = []
+        for msg in recent:
+            role = msg.get("role", "")
+            content = msg.get("content", "").strip()
+            if content:
+                speaker = "User" if role == "user" else "Agent"
+                lines.append(f"{speaker}: {content}")
+
+        return "\n".join(lines) if lines else "(No previous conversation)"
+
+    async def _perform_spt_reflection(
+        self,
+        messages: List[Dict[str, str]],
+        last_user_msg: str,
+        session_id: str
+    ) -> Dict[str, str]:
         """
-        페르소나 + SPT Reflection Framework 결합 프롬프트 구성
+        Phase 1: SPT 자기 인식 단계 - txt 파일 기반 프롬프트
+        디버그 로그에 전체 과정 출력
         """
-        # 페르소나 + SPT Framework 결합
+        logger.info(f"🧠 [PHASE1_START] session_id={session_id}, Performing SPT reflection...")
+
+        # 최근 대화 히스토리 구성
+        history_text = self._format_history(messages)
+
+        # txt 파일에서 로드한 프롬프트 사용 (하드코딩 제거, 페르소나 전체 사용)
+        reflection_prompt = f"""=== MY PERSONA ===
+{self.persona_prompt}
+=== END PERSONA ===
+
+=== RECENT CONVERSATION ===
+{history_text}
+=== END CONVERSATION ===
+
+User's last message: "{last_user_msg}"
+
+{self.spt_framework}"""
+
+        try:
+            # 빠른 모델로 reflection 수행
+            reflection_llm = ChatOpenAI(
+                model="gpt-4o-mini",
+                api_key=self.api_key,
+                temperature=0.3,
+                max_tokens=500
+            )
+
+            result = await reflection_llm.ainvoke([
+                SystemMessage(content=reflection_prompt)
+            ])
+
+            reflection_text = result.content.strip()
+
+            # 디버그 로그 출력
+            logger.info(f"🧠 [SPT_REFLECTION] session_id={session_id}")
+            logger.info(f"🧠 [SPT_REFLECTION] User message: '{last_user_msg}'")
+            logger.info(f"🧠 [SPT_REFLECTION] Full output:\n{reflection_text}")
+            logger.info(f"🧠 [PHASE1_COMPLETE] Reflection done")
+
+            return {"reflection": reflection_text}
+
+        except Exception as e:
+            logger.error(f"🧠 [SPT_REFLECTION] Error: {e}")
+            return {"reflection": "Reflection failed - respond naturally based on persona."}
+
+    def _build_messages_with_reflection(
+        self,
+        messages: List[Dict[str, str]],
+        reflection: Dict[str, str]
+    ) -> List:
+        """
+        Phase 2용 메시지 구성: 페르소나 + Reflection 결과 + 대화 히스토리
+        """
         combined_prompt = f"""{self.persona_prompt}
 
-=== SPT REFLECTION FRAMEWORK ===
-{self.spt_framework}
-=== END FRAMEWORK ===
-"""
+=== SPT REFLECTION CONTEXT ===
+Based on your self-reflection analysis:
+{reflection['reflection']}
+=== END REFLECTION ===
+
+IMPORTANT: Use the reflection above to guide your response, but output ONLY your final in-character response. Do NOT output the reflection analysis again."""
 
         lc_messages = [SystemMessage(content=combined_prompt)]
 
@@ -138,24 +214,34 @@ class Colleague2Agent:
         session_id: str = "default"
     ) -> str:
         """
-        비스트리밍 대화 - SPT Reflection Framework 통합
+        Two-Phase 대화:
+        Phase 1: SPT 자기 인식 (디버그 로그 출력)
+        Phase 2: 응답 생성
         """
         try:
             last_user_msg = self._extract_last_user_message(messages)
 
+            # Phase 1: SPT Reflection (디버그 로그 출력)
+            reflection = await self._perform_spt_reflection(messages, last_user_msg, session_id)
+
+            # Phase 2: Response Generation
+            logger.info(f"🎭 [PHASE2_START] session_id={session_id}, Generating response...")
+
             llm = self._create_llm(max_tokens, streaming=False, temperature=temperature)
-            lc_messages = self._build_messages(messages)
+            lc_messages = self._build_messages_with_reflection(messages, reflection)
             result = await llm.ainvoke(lc_messages)
 
             raw_content = result.content.strip()
             cleaned_content = clean_gpt_response(raw_content)
 
+            logger.info(f"🎭 [PHASE2_COMPLETE] session_id={session_id}, response: '{cleaned_content}'")
+
+            # 세션 히스토리 저장
             history = self.get_session_history(session_id)
             if last_user_msg:
                 history.add_user_message(last_user_msg)
             history.add_ai_message(cleaned_content)
 
-            logger.info(f"✅ [Colleague2] session_id={session_id}, response: '{cleaned_content}'")
             return cleaned_content
 
         except Exception as e:
@@ -170,13 +256,21 @@ class Colleague2Agent:
         session_id: str = "default"
     ):
         """
-        스트리밍 대화 - SPT Reflection Framework 통합
+        Two-Phase 스트리밍 대화:
+        Phase 1: SPT 자기 인식 (디버그 로그 출력)
+        Phase 2: 응답 스트리밍
         """
         try:
             last_user_msg = self._extract_last_user_message(messages)
 
+            # Phase 1: SPT Reflection (디버그 로그 출력)
+            reflection = await self._perform_spt_reflection(messages, last_user_msg, session_id)
+
+            # Phase 2: Response Generation (Streaming)
+            logger.info(f"🎭 [PHASE2_START] session_id={session_id}, Generating streamed response...")
+
             llm = self._create_llm(max_tokens, streaming=True, temperature=temperature)
-            lc_messages = self._build_messages(messages)
+            lc_messages = self._build_messages_with_reflection(messages, reflection)
 
             full_response = ""
             async for chunk in llm.astream(lc_messages):
@@ -186,13 +280,13 @@ class Colleague2Agent:
                     yield chunk_text
 
             cleaned_response = clean_gpt_response(full_response)
+            logger.info(f"🎭 [PHASE2_COMPLETE] session_id={session_id}, streamed: '{cleaned_response}'")
 
+            # 세션 히스토리 저장
             history = self.get_session_history(session_id)
             if last_user_msg:
                 history.add_user_message(last_user_msg)
             history.add_ai_message(cleaned_response)
-
-            logger.info(f"✅ [Colleague2] session_id={session_id}, streamed: '{cleaned_response}'")
 
         except Exception as e:
             logger.error(f"❌ [Colleague2] Streaming error: {e}", exc_info=True)
