@@ -3,9 +3,9 @@ You monitor an AI-ethics counseling chat.
 Current question: "{current_question}"
 User utterance: "{user_message}"
 
-Classify the user utterance into one of eight intents.
+Classify the user utterance into one of seven intents.
 
-⚠️ 핵심 판단: 사용자가 질문의 **핵심 키워드**에 대해 직접 언급했는가?
+⚠️ 핵심 판단: 질문에 대한 응답인지, 의미를 묻는지, 이유가 있는지 여부.
 
 ⚠️ 최우선 규칙 - 먼저 확인!
 다음 표현이 포함되면 무조건 clarification:
@@ -15,8 +15,8 @@ Classify the user utterance into one of eight intents.
 → 이 표현들은 다른 조건과 무관하게 항상 clarification!
 
 CATEGORIES
-1. answer (질문의 핵심에 직접 답한 경우만!)
-   - 질문의 핵심 키워드를 직접 언급하거나 그에 대해 답한 경우
+1. answer (질문에 대한 응답이면 answer)
+   - 질문의 핵심 키워드를 직접 언급하지 않아도, 질문에 대한 반응이면 answer
    - ⚠️ "~문제?", "~걱정?" 처럼 물음표로 끝나도 우려/걱정을 표현하면 answer!
    - 예시:
      - 질문: "우려되는 점이 있어?" → "걱정돼", "우려는 없어", "불안해" = answer
@@ -24,21 +24,7 @@ CATEGORIES
      - 질문: "피해가 될 수 있을까?" → "피해볼 사람 있어", "피해는 없을 듯" = answer
      - 질문: "동의 없이 만들어도 괜찮을까?" → "동의 필요해", "괜찮아" = answer
 
-2. off_topic_answer (⚠️ 엄격하게! - 질문을 무시하고 다른 얘기를 한 경우)
-   - 질문의 핵심 키워드(우려, 피해, 동의, 공정성 등)에 대해 전혀 언급하지 않음
-   - 대신 장점/이익/편리함/기술발전 등 다른 주제로 빠진 경우
-   - ⚠️ 엄격한 판단 예시:
-     - 질문: "우려되는 점이 있어?"
-       - "돈 벌겠지" → off_topic_answer (우려 아닌 이익 얘기)
-       - "편리하잖아" → off_topic_answer (우려 아닌 장점 얘기)
-       - "도움될듯" → off_topic_answer (우려 아닌 장점 얘기)
-     - 질문: "피해가 될 수 있을까?"
-       - "기술 발전이지" → off_topic_answer (피해 아닌 기술 얘기)
-       - "편해보여" → off_topic_answer (피해 아닌 편리함 얘기)
-     - 질문: "동의 없이 만들어도 괜찮을까?"
-       - "기술 발전이니까" → off_topic_answer (동의 아닌 기술 얘기)
-
-3. need_reason (이유 없이 짧게 동의/반대한 경우)
+2. need_reason (이유 없이 짧게 동의/반대한 경우)
    - "응", "아니", "그래", "맞아" 같은 짧은 답변
    - "그럴수도", "그럴 수도 있겠다", "그런 것 같아" 같은 짧은 동의
    - "아닐 것 같아", "그건 아닌 것 같아" 같은 짧은 반대
@@ -48,7 +34,7 @@ CATEGORIES
      - "맞아" → need_reason (이유 없는 짧은 동의)
      - "아닐 것 같아" → need_reason (이유 없는 짧은 반대)
 
-4. ask_concept (⚠️⚠️⚠️ 거의 사용 안 함! 극도로 엄격!)
+3. ask_concept (⚠️⚠️⚠️ 거의 사용 안 함! 극도로 엄격!)
    - ⚠️ 반드시 다음 형식이어야만 ask_concept:
      - "[명사]이/가 뭐야?" 또는 "[명사]이/가 뭔데?"
      - 예: "자율성이 뭐야?", "공정성이 뭔데?", "Autonomy가 뭐야?"
@@ -66,21 +52,16 @@ CATEGORIES
      - "공정성이 뭔데?" → ask_concept (뜻을 묻는 질문)
      - "Autonomy가 뭐야?" → ask_concept (뜻을 묻는 질문)
 
-5. clarification - 질문 자체를 이해 못함
+4. clarification - 질문 자체를 이해 못함
    - 예: "무슨 말이야?", "뭔 소리야?", "무슨 뜻이야?", "이해가 안 돼"
 
-6. dont_know_second - 질문을 이해했지만 답을 모르겠다고 할 때
+5. dont_know_second - 질문을 이해했지만 답을 모르겠다고 할 때
    - "모르겠어", "잘 모르겠어", "글쎄"
 
-7. unrelated - off-topic chatter (완전히 관계없는 대화)
+6. unrelated - 질문과 무관한 대화 (완전히 관계없는 주제)
+   - 예: "오늘 날씨 좋다", "밥 먹었어?"
 
-8. ask_opinion - 에이전트의 의견을 요청 ("너는 어떻게 생각해?", "네 생각은?")
-
-⚠️ off_topic_answer vs answer 판단 핵심:
-- 질문이 "우려/걱정"을 물었으면 → 우려/걱정/불안/문제점 언급해야 answer
-- 질문이 "피해"를 물었으면 → 피해/손해/불이익 언급해야 answer
-- 질문이 "동의/괜찮음"을 물었으면 → 동의/허락/괜찮음 언급해야 answer
-- 위 키워드 없이 "편리함/이익/기술발전/도움" 만 얘기하면 → off_topic_answer
+7. ask_opinion - 에이전트의 의견을 요청 ("너는 어떻게 생각해?", "네 생각은?")
 
 OUTPUT
-Return exactly one lowercase label: answer, off_topic_answer, need_reason, ask_concept, clarification, dont_know_second, unrelated, or ask_opinion.
+Return exactly one lowercase label: answer, need_reason, ask_concept, clarification, dont_know_second, unrelated, or ask_opinion.

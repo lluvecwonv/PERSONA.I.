@@ -182,17 +182,6 @@ class Stage3Handler:
             is_sufficient = False
             logger.info(f"⚠️ User asked for opinion - staying on Q{current_question_index}")
 
-        elif intent == "off_topic_answer":
-            # ✨ 사용자가 질문에 답하지 않고 다른 얘기를 함 → 질문 다시 연결
-            logger.info(f"⚠️ User gave off-topic answer - reconnecting to previous question")
-            current_question_text = ""
-            if 0 <= current_question_index < len(self.ethics_topics):
-                question_data = self.ethics_topics[current_question_index]
-                current_question_text = question_data.get("variations", [""])[0]
-            response = self._handle_off_topic_answer(user_message, current_question_index, context, current_question_text)
-            next_question_index = current_question_index  # 같은 질문 유지
-            is_sufficient = False
-
         else:
             # answer: 일반 대답 → 다음 질문으로
             logger.info(f"✅ User answered question #{current_question_index}")
@@ -373,48 +362,3 @@ class Stage3Handler:
 
         result = self.llm.invoke(prompt)
         return result.content.strip().strip('"')
-
-    def _handle_off_topic_answer(self, user_message: str, question_index: int, context: str, current_question: str) -> str:
-        """
-        사용자가 질문에 답하지 않고 다른 얘기를 할 때 → 사용자 발언 인정 + 질문 다시 연결
-
-        Args:
-            user_message: 사용자 메시지 (질문과 무관한 내용)
-            question_index: 현재 질문 인덱스
-            context: 대화 컨텍스트
-            current_question: 현재 질문 텍스트
-
-        Returns:
-            사용자 발언 인정 + 질문 다시 연결
-        """
-        # 현재 질문 가져오기
-        if 0 <= question_index < len(self.ethics_topics):
-            question_data = self.ethics_topics[question_index]
-            original_question = question_data.get("variations", [""])[0]
-            if not original_question:
-                original_question = "이 부분에 대해 어떻게 생각해?"
-        else:
-            original_question = current_question or "이 부분에 대해 어떻게 생각해?"
-
-        # ✨ 프롬프트 파일에서 로드
-        prompt_template = self.prompts.get("stage3_off_topic", "")
-
-        if not prompt_template:
-            # 폴백: 기본 응답
-            return f"그렇긴 하지. 근데 아까 물어본 거 있잖아, {original_question}"
-
-        # 프롬프트 포맷팅
-        prompt = format_prompt(
-            prompt_template,
-            persona_prompt=self.persona_prompt,
-            context=context,
-            user_message=user_message,
-            original_question=original_question
-        )
-
-        try:
-            result = self.llm.invoke(prompt)
-            return result.content.strip().strip('"')
-        except Exception as e:
-            logger.error(f"❌ Error generating off_topic response: {e}")
-            return f"그렇긴 하지. 근데 아까 물어본 거 있잖아, {original_question}"

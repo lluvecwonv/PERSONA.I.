@@ -129,7 +129,6 @@ class IntentDetector:
             - "clarification": 질문 이해 못함
             - "ask_why_unsure": 모르겠다고 함 → "왜 모르겠어?" 질문
             - "ask_opinion": 에이전트에게 의견 질문
-            - "off_topic_answer": 질문과 무관한 답변
         """
         # ✨ 모든 의도 분류는 LLM이 담당 (휴리스틱 제거)
         intent_prompt = format_prompt(
@@ -155,10 +154,6 @@ class IntentDetector:
             elif "ask_concept" in intent:
                 logger.info(f"🔍 [Intent Detection] 📚 RESULT: ask_concept (will explain concept)")
                 return "ask_concept"
-            elif "off_topic" in intent:
-                # ✨ 새로운 카테고리: 질문에 답하지 않고 다른 얘기를 한 경우
-                logger.info(f"🔍 [Intent Detection] ⚠️ RESULT: off_topic_answer (user ignored the question)")
-                return "off_topic_answer"
             elif "need_reason" in intent:
                 if self._contains_reason_statement(user_message):
                     logger.info(

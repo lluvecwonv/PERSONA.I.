@@ -328,7 +328,8 @@ class SPTAgent:
         messages: List[Dict[str, str]],
         temperature: float = 0.7,
         max_tokens: int = 500,
-        session_id: str = "default"  # ✨ 세션 ID 추가
+        session_id: str = "default",  # ✨ 세션 ID 추가
+        use_response_type: bool = True
     ) -> str:
         """
         LangChain 기반 비스트리밍 대화 처리
@@ -342,7 +343,7 @@ class SPTAgent:
             last_user_msg = self._extract_last_user_message(messages)
             dynamic_instruction = None
 
-            if last_user_msg:
+            if use_response_type and last_user_msg:
                 response_type = self.classify_response_type(last_user_msg)
                 dynamic_instruction = self.get_dynamic_instruction(response_type)
                 logger.info(f"🔍 [SPT] Response type: {response_type}")

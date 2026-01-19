@@ -652,33 +652,18 @@ class LangChainService:
             # ✨ Step 1: SPT V2 - DST + Controller로 응답 전략 결정
             logger.info(f"🧠 [PROFILE_CHAT] Step 1: Calling SPT V2 for strategy decision...")
 
-            # 이전 질문의 키워드 추출 (off_topic 감지용)
-            question_keywords = session_data.get("last_question_keywords", [])
-
             # SPT V2로 전략 결정
             spt_result = await self.spt_agent_v2.process(
                 session_id=f"{agent_key}_{session_id}",
                 user_message=message,
                 conversation_history=session_data["messages"],
-                topic_context=self._get_topic_context(agent_key),
-                question_keywords=question_keywords
+                topic_context=self._get_topic_context(agent_key)
             )
 
             logger.info(f"🧠 [PROFILE_CHAT] SPT V2 result: strategy={spt_result['strategy']}, allow_question={spt_result['allow_question']}")
 
             # SPT V2의 지시사항 사용
             spt_instruction = spt_result["instruction"]
-
-            # 다음 질문의 키워드 저장 (다음 턴의 off_topic 감지용)
-            if spt_result.get("suggested_keywords"):
-                session_data["last_question_keywords"] = spt_result["suggested_keywords"]
-
-            # ✨ Step 2: 이전 AI 응답들에서 핵심 주장 추출 (반복 방지)
-            previous_ai_claims = self._extract_previous_claims(session_data["messages"])
-            claims_warning = ""
-            if previous_ai_claims:
-                claims_list = "\n".join([f"- {claim}" for claim in previous_ai_claims[-3:]])  # 최근 3개만
-                claims_warning = f"\n\n⚠️ 이미 말한 주장 (절대 반복 금지!):\n{claims_list}\n→ 위 내용과 다른 새로운 논점으로 답하세요!"
 
             # ✨ Step 3: 페르소나 에이전트로 정제 (SPT V2 지시사항 전달)
             logger.info(f"🎭 [PROFILE_CHAT] Step 2: Calling persona agent ({agent_key}) for refinement...")
@@ -688,7 +673,7 @@ class LangChainService:
             full_instruction = (
                 f"{spt_instruction}\n\n"
                 f"추가 규칙:\n"
-                f"- 반드시 한국어(반말 톤)로 답하세요.{claims_warning}"
+                f"- 반드시 한국어로 답하세요."
             )
 
             refinement_messages.append({
@@ -778,33 +763,18 @@ class LangChainService:
             # ✨ Step 1: SPT V2 - DST + Controller로 응답 전략 결정
             logger.info(f"🧠 [PROFILE_STREAM] Step 1: Calling SPT V2 for strategy decision...")
 
-            # 이전 질문의 키워드 추출 (off_topic 감지용)
-            question_keywords = session_data.get("last_question_keywords", [])
-
             # SPT V2로 전략 결정
             spt_result = await self.spt_agent_v2.process(
                 session_id=f"{agent_key}_{session_id}",
                 user_message=message,
                 conversation_history=session_data["messages"],
-                topic_context=self._get_topic_context(agent_key),
-                question_keywords=question_keywords
+                topic_context=self._get_topic_context(agent_key)
             )
 
             logger.info(f"🧠 [PROFILE_STREAM] SPT V2 result: strategy={spt_result['strategy']}, allow_question={spt_result['allow_question']}")
 
             # SPT V2의 지시사항 사용
             spt_instruction = spt_result["instruction"]
-
-            # 다음 질문의 키워드 저장 (다음 턴의 off_topic 감지용)
-            if spt_result.get("suggested_keywords"):
-                session_data["last_question_keywords"] = spt_result["suggested_keywords"]
-
-            # ✨ Step 2: 이전 AI 응답들에서 핵심 주장 추출 (반복 방지)
-            previous_ai_claims = self._extract_previous_claims(session_data["messages"])
-            claims_warning = ""
-            if previous_ai_claims:
-                claims_list = "\n".join([f"- {claim}" for claim in previous_ai_claims[-3:]])  # 최근 3개만
-                claims_warning = f"\n\n⚠️ 이미 말한 주장 (절대 반복 금지!):\n{claims_list}\n→ 위 내용과 다른 새로운 논점으로 답하세요!"
 
             # ✨ Step 3: 페르소나 에이전트로 정제 (SPT V2 지시사항 전달)
             logger.info(f"🎭 [PROFILE_STREAM] Step 2: Calling persona agent ({agent_key}) for refinement...")
@@ -814,7 +784,7 @@ class LangChainService:
             full_instruction = (
                 f"{spt_instruction}\n\n"
                 f"추가 규칙:\n"
-                f"- 반드시 한국어(반말 톤)로 답하세요.{claims_warning}"
+                f"- 반드시 한국어로 답하세요."
             )
 
             refinement_messages.append({
@@ -932,21 +902,6 @@ class LangChainService:
         except Exception as e:
             logger.error(f"🔄 [FALLBACK] gpt-4o-mini failed: {e}")
             return ""
-
-    @staticmethod
-    def _extract_previous_claims(messages: List[Dict[str, str]]) -> List[str]:
-        """이전 AI 응답들에서 핵심 주장을 추출 (반복 방지용)"""
-        claims = []
-        for msg in messages:
-            if msg.get("role") == "assistant":
-                content = msg.get("content", "").strip()
-                if content and len(content) > 10:
-                    # 첫 문장만 추출 (핵심 주장)
-                    first_sentence = content.split('.')[0].strip()
-                    if first_sentence and len(first_sentence) > 5:
-                        # 80자 이하로 자르기
-                        claims.append(first_sentence[:80] + ("..." if len(first_sentence) > 80 else ""))
-        return claims
 
     @staticmethod
     def _limit_sentences(text: str, max_sentences: int = 3) -> str:

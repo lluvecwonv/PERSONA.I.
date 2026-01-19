@@ -937,38 +937,19 @@ class LangChainService:
             logger.info(f"🔍 [PROFILE_CHAT] msg[{idx}]: role={role}, content='{content}...'")
 
         try:
-            # ✨ Step 0: 이전 AI 응답들에서 핵심 주장 추출 (반복 방지)
-            previous_ai_claims = self._extract_previous_claims(session_data["messages"])
-
             # ✨ Step 1: SPT 에이전트로 도덕적 추론 생성 (이전 주장 포함하여 반복 방지)
             logger.info(f"🧠 [PROFILE_CHAT] Step 1: Calling SPT agent for moral reasoning...")
 
-            # SPT 메시지에 반복 방지 지시 추가
             spt_messages = session_data["messages"].copy()
-            if previous_ai_claims:
-                anti_repeat_instruction = (
-                    f"\n\n⚠️ 아래 논점은 이미 사용됨 (절대 반복 금지!):\n"
-                    + "\n".join([f"- {claim[:80]}" for claim in previous_ai_claims[-3:]])
-                    + "\n→ 완전히 새로운 관점/논점으로 질문하세요!"
-                )
-                # 마지막 user 메시지에 지시 추가
-                if spt_messages and spt_messages[-1].get("role") == "user":
-                    spt_messages[-1] = {
-                        "role": "user",
-                        "content": spt_messages[-1]["content"] + anti_repeat_instruction
-                    }
+            disable_response_type = agent_key in {"colleague1", "colleague2", "jangmo", "son"}
 
             spt_draft = await self.spt_agent.chat(
                 messages=spt_messages,
                 temperature=0.7,
-                max_tokens=300
+                max_tokens=300,
+                use_response_type=not disable_response_type
             )
             logger.info(f"🧠 [PROFILE_CHAT] SPT draft: '{spt_draft if spt_draft else 'EMPTY'}'")
-            claims_warning = ""
-            if previous_ai_claims:
-                claims_list = "\n".join([f"- {claim}" for claim in previous_ai_claims[-3:]])  # 최근 3개만
-                claims_warning = f"\n\n⚠️ 이미 말한 주장 (절대 반복 금지!):\n{claims_list}\n→ 위 내용과 다른 새로운 논점으로 답하세요!"
-
             # ✨ Step 3: 페르소나 에이전트로 정제 (SPT 초안을 강력한 지시로 전달)
             logger.info(f"🎭 [PROFILE_CHAT] Step 2: Calling persona agent ({agent_key}) for refinement...")
             refinement_messages = session_data["messages"][:-1].copy()  # 마지막 user 메시지 제외
@@ -979,7 +960,7 @@ class LangChainService:
                 f"1. 다음 관점을 당신의 말투로 반드시 표현하세요: {spt_draft}\n"
                 f"2. 사용자 발화에 직접 반응하는 질문을 던지세요.\n"
                 f"3. 같은 주장을 반복하지 마세요.\n"
-                f"4. 반드시 한국어(반말 톤)로 답하세요.{claims_warning}"
+                f"4. 반드시 한국어로 답하세요."
             )
 
             refinement_messages.append({
@@ -1082,37 +1063,18 @@ class LangChainService:
             max_tokens = 300
 
         try:
-            # ✨ Step 0: 이전 AI 응답들에서 핵심 주장 추출 (반복 방지)
-            previous_ai_claims = self._extract_previous_claims(session_data["messages"])
-
             # ✨ Step 1: SPT 에이전트로 도덕적 추론 생성 (이전 주장 포함하여 반복 방지)
             logger.info(f"🧠 [PROFILE_STREAM] Step 1: Calling SPT agent for moral reasoning...")
 
-            # SPT 메시지에 반복 방지 지시 추가
             spt_messages = session_data["messages"].copy()
-            if previous_ai_claims:
-                anti_repeat_instruction = (
-                    f"\n\n⚠️ 아래 논점은 이미 사용됨 (절대 반복 금지!):\n"
-                    + "\n".join([f"- {claim[:80]}" for claim in previous_ai_claims[-3:]])
-                    + "\n→ 완전히 새로운 관점/논점으로 질문하세요!"
-                )
-                # 마지막 user 메시지에 지시 추가
-                if spt_messages and spt_messages[-1].get("role") == "user":
-                    spt_messages[-1] = {
-                        "role": "user",
-                        "content": spt_messages[-1]["content"] + anti_repeat_instruction
-                    }
-
+            disable_response_type = agent_key in {"colleague1", "colleague2", "jangmo", "son"}
             spt_draft = await self.spt_agent.chat(
                 messages=spt_messages,
                 temperature=0.7,
-                max_tokens=300
+                max_tokens=300,
+                use_response_type=not disable_response_type
             )
             logger.info(f"🧠 [PROFILE_STREAM] SPT draft: '{spt_draft if spt_draft else 'EMPTY'}'")
-            claims_warning = ""
-            if previous_ai_claims:
-                claims_list = "\n".join([f"- {claim}" for claim in previous_ai_claims[-3:]])  # 최근 3개만
-                claims_warning = f"\n\n⚠️ 이미 말한 주장 (절대 반복 금지!):\n{claims_list}\n→ 위 내용과 다른 새로운 논점으로 답하세요!"
 
             # ✨ Step 3: 페르소나 에이전트로 정제 (SPT 초안을 강력한 지시로 전달)
             logger.info(f"🎭 [PROFILE_STREAM] Step 2: Calling persona agent ({agent_key}) for refinement...")
@@ -1123,7 +1085,7 @@ class LangChainService:
                 f"📌 필수 지시사항:\n"
                 f"1. 다음 관점을 당신의 말투로 반드시 표현하세요: {spt_draft}\n"
                 f"2. 사용자 발화에 직접 반응하는 질문을 던지세요.\n"
-                f"3. 같은 주장을 반복하지 마세요.{claims_warning}"
+                f"3. 같은 주장을 반복하지 마세요."
             )
 
             refinement_messages.append({
@@ -1231,18 +1193,6 @@ class LangChainService:
             logger.error(f"🎙️ [TTS] ❌ Error: {type(e).__name__}: {e}")
             logger.error(f"🎙️ [TTS] ❌ Text was: '{text[:200]}...'")
             raise
-
-    @staticmethod
-    def _extract_previous_claims(messages: List[Dict[str, str]]) -> List[str]:
-        """이전 AI 응답들에서 전체 응답을 추출 (반복 방지용)"""
-        claims = []
-        for msg in messages:
-            if msg.get("role") == "assistant":
-                content = msg.get("content", "").strip()
-                if content and len(content) > 10:
-                    # 전체 응답을 추출 (150자로 제한)
-                    claims.append(content[:150] + ("..." if len(content) > 150 else ""))
-        return claims
 
     @staticmethod
     def _limit_sentences(text: str, max_sentences: int = 3) -> str:

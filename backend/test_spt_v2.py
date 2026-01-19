@@ -38,47 +38,40 @@ def test_dst_basic():
     dst = DialogueStateTracker()
     session_id = "test_session_1"
 
-    # 테스트 케이스: (사용자 메시지, 키워드, 예상 상태)
+    # 테스트 케이스: (사용자 메시지, 예상 상태)
     test_cases = [
         # 정상 답변
-        ("개인정보 유출이 걱정돼", ["우려", "걱정", "불안"], UserResponseStatus.ANSWERED),
-        ("피해볼 사람 있을 것 같아", ["피해", "손해"], UserResponseStatus.ANSWERED),
-
-        # Off-topic (질문 무시)
-        ("돈 벌겠지", ["우려", "걱정"], UserResponseStatus.OFF_TOPIC),
-        ("편리하잖아", ["우려", "걱정"], UserResponseStatus.OFF_TOPIC),
-        ("기술 발전이지", ["피해", "손해"], UserResponseStatus.OFF_TOPIC),
+        ("개인정보 유출이 걱정돼", UserResponseStatus.ANSWERED),
+        ("피해볼 사람 있을 것 같아", UserResponseStatus.ANSWERED),
 
         # 이해 못함
-        ("무슨 말이야?", [], UserResponseStatus.NEEDS_CLARIFICATION),
-        ("뭔 소리야", [], UserResponseStatus.NEEDS_CLARIFICATION),
+        ("무슨 말이야?", UserResponseStatus.NEEDS_CLARIFICATION),
+        ("뭔 소리야", UserResponseStatus.NEEDS_CLARIFICATION),
 
         # 모르겠다
-        ("글쎄 모르겠어", [], UserResponseStatus.DONT_KNOW),
-        ("잘 모르겠는데", [], UserResponseStatus.DONT_KNOW),
+        ("글쎄 모르겠어", UserResponseStatus.DONT_KNOW),
+        ("잘 모르겠는데", UserResponseStatus.DONT_KNOW),
 
         # 역질문
-        ("너는 어떻게 생각해?", [], UserResponseStatus.ASKING_BACK),
+        ("너는 어떻게 생각해?", UserResponseStatus.ASKING_BACK),
     ]
 
     passed = 0
     failed = 0
 
-    for user_msg, keywords, expected_status in test_cases:
+    for user_msg, expected_status in test_cases:
         # 각 테스트마다 새 세션
         test_session = f"test_{user_msg[:10]}"
 
         state = dst.analyze_user_response(
             session_id=test_session,
-            user_message=user_msg,
-            question_keywords=keywords
+            user_message=user_msg
         )
 
         is_pass = state.response_status == expected_status
         status_icon = "✅" if is_pass else "❌"
 
         print(f"\n{status_icon} 메시지: \"{user_msg}\"")
-        print(f"   키워드: {keywords}")
         print(f"   예상: {expected_status.value if expected_status else 'None'}")
         print(f"   결과: {state.response_status.value if state.response_status else 'None'}")
 
@@ -107,33 +100,22 @@ def test_controller_decisions():
     scenarios = [
         {
             "name": "정상 답변 후 새 질문 허용",
-            "setup": lambda s: dst.analyze_user_response(s, "개인정보가 걱정돼", ["우려", "걱정"], prev_question),
+            "setup": lambda s: dst.analyze_user_response(s, "개인정보가 걱정돼", prev_question),
             "user_msg": "개인정보가 걱정돼",
-            "keywords": ["우려", "걱정"],
             "candidates": ["다른 사람 입장에서는 어떨까?"],
             "expected_allow": True,
         },
         {
-            "name": "Off-topic 응답 → 주제 재연결",
-            "setup": lambda s: dst.analyze_user_response(s, "돈 벌겠지", ["우려", "걱정"], prev_question),
-            "user_msg": "돈 벌겠지",
-            "keywords": ["우려", "걱정"],
-            "candidates": ["새로운 질문"],
-            "expected_allow": False,
-        },
-        {
             "name": "이해 못함 → 설명 필요",
-            "setup": lambda s: dst.analyze_user_response(s, "무슨 말이야?", [], prev_question),
+            "setup": lambda s: dst.analyze_user_response(s, "무슨 말이야?", prev_question),
             "user_msg": "무슨 말이야?",
-            "keywords": [],
             "candidates": [],
             "expected_allow": False,
         },
         {
             "name": "역질문 → 먼저 답해야 함",
-            "setup": lambda s: dst.analyze_user_response(s, "너는 어떻게 생각해?", [], prev_question),
+            "setup": lambda s: dst.analyze_user_response(s, "너는 어떻게 생각해?", prev_question),
             "user_msg": "너는 어떻게 생각해?",
-            "keywords": [],
             "candidates": [],
             "expected_allow": False,
         },
@@ -152,8 +134,7 @@ def test_controller_decisions():
         decision = controller.decide(
             session_id=session_id,
             user_message=scenario["user_msg"],
-            question_candidates=scenario["candidates"],
-            question_keywords=scenario["keywords"]
+            question_candidates=scenario["candidates"]
         )
 
         is_pass = decision.allow_question == scenario["expected_allow"]
@@ -194,17 +175,7 @@ async def test_spt_v2_integration():
             "history": [
                 {"role": "assistant", "content": "혹시 구매한다면 우려되는 점이 있어?"},
             ],
-            "keywords": ["우려", "걱정", "불안"],
             "expected_allow": True,
-        },
-        {
-            "name": "Off-topic 응답",
-            "user_msg": "돈 벌겠지 뭐",
-            "history": [
-                {"role": "assistant", "content": "혹시 구매한다면 우려되는 점이 있어?"},
-            ],
-            "keywords": ["우려", "걱정", "불안"],
-            "expected_allow": False,
         },
         {
             "name": "이해 못함",
@@ -212,7 +183,6 @@ async def test_spt_v2_integration():
             "history": [
                 {"role": "assistant", "content": "이 서비스가 자율성을 침해한다고 생각해?"},
             ],
-            "keywords": ["자율성", "침해"],
             "expected_allow": False,
         },
     ]
@@ -231,8 +201,7 @@ async def test_spt_v2_integration():
                 session_id=session_id,
                 user_message=scenario["user_msg"],
                 conversation_history=scenario["history"],
-                topic_context="AI 부활 서비스",
-                question_keywords=scenario["keywords"]
+                topic_context="AI 부활 서비스"
             )
 
             is_pass = result["allow_question"] == scenario["expected_allow"]

@@ -250,10 +250,6 @@ class IntentDetector:
             elif "dont_know_second" in intent:
                 logger.info("Detected intent: dont_know_second")
                 final_intent = "dont_know_second"
-            elif "off_topic" in intent:
-                # ✨ 새로운 카테고리: 질문에 답하지 않고 다른 얘기를 한 경우
-                logger.info("Detected intent: off_topic_answer (user ignored the question)")
-                final_intent = "off_topic_answer"
             elif "unrelated" in intent:
                 logger.info("Detected intent: unrelated")
                 final_intent = "unrelated"
@@ -271,8 +267,7 @@ class IntentDetector:
                 return "ask_why_unsure"
 
             # ✨ 짧은 답변이면서 이유가 없으면 need_reason으로 전환
-            # answer, off_topic_answer 모두 체크
-            if final_intent in ("answer", "off_topic_answer"):
+            if final_intent == "answer":
                 if self._is_positive_response(user_message):
                     # "웅 도움 될 것 같아" 같은 긍정 답변 → need_reason으로
                     logger.info("Detected positive response without reason → switching to need_reason")

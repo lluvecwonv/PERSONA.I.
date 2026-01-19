@@ -16,6 +16,7 @@ Categories (in priority order):
 
 3. clarification
    - 질문을 이해 못함 ("무슨 말이야?", "뭔 소리야?")
+   - 질문과 무관한 답변도 clarification으로 분류
 
 4. dont_know
    - 답을 모르겠다는 표현 ("모르겠어", "글쎄", "몰라", "잘 모르겠는데", "생각이 안 나", "어?", "?")
@@ -37,13 +38,10 @@ Categories (in priority order):
      - "화가들이 피해볼 것 같아. AI가 일자리를 뺏으니까" → answer (이유 있음)
    - 이유 표현이 있으면 answer: ~하니까, ~라서, ~거든, ~잖아, ~때문에
 
-7. off_topic_answer
-   - 질문과 완전히 무관한 답변 ("오늘 날씨 좋다", "밥 먹었어?")
-
 ⚠️ 핵심 판단 기준:
 - 모르겠다/망설임 표현 → dont_know
 - 의견만 있고 이유가 없으면 → need_reason
 - 의견 + 이유가 있으면 → answer
-- 질문과 무관하면 → off_topic_answer
+- 질문과 무관하면 → clarification
 
-Return one lowercase label: answer, need_reason, dont_know, ask_concept, clarification, ask_opinion, or off_topic_answer.
+Return one lowercase label: answer, need_reason, dont_know, ask_concept, clarification, or ask_opinion.

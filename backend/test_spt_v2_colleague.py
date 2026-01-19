@@ -40,27 +40,22 @@ async def test_colleague1_scenario():
         {
             "name": "정상 답변",
             "user_msg": "기존 화가들이 피해볼 것 같아",
-            "keywords": ["우려", "걱정", "피해"],
         },
         {
             "name": "Off-topic (이익만 얘기)",
             "user_msg": "예술관이 돈 많이 벌겠네",
-            "keywords": ["우려", "걱정", "피해"],
         },
         {
             "name": "Off-topic (기술 칭찬)",
             "user_msg": "기술이 대단해졌네",
-            "keywords": ["우려", "걱정", "피해"],
         },
         {
             "name": "이해 못함",
             "user_msg": "무슨 말이야? 뭘 물어보는 거야?",
-            "keywords": ["우려", "걱정"],
         },
         {
             "name": "역질문",
             "user_msg": "선배는 어떻게 생각해?",
-            "keywords": ["우려", "걱정"],
         },
     ]
 
@@ -74,8 +69,7 @@ async def test_colleague1_scenario():
             session_id=session_id,
             user_message=tc["user_msg"],
             conversation_history=conversation,
-            topic_context="AI 예술 전시 - 협회 투표 (반대 입장)",
-            question_keywords=tc["keywords"]
+            topic_context="AI 예술 전시 - 협회 투표 (반대 입장)"
         )
 
         print(f"\n🎯 전략: {result['strategy']}")
@@ -105,27 +99,22 @@ async def test_colleague2_scenario():
         {
             "name": "정상 답변 (공정)",
             "user_msg": "공정하다고 생각해, 규칙 안에서 만들었으니까",
-            "keywords": ["공정", "공정성", "규칙"],
         },
         {
             "name": "정상 답변 (불공정)",
             "user_msg": "불공정해, 다른 작가 그림 베꼈잖아",
-            "keywords": ["공정", "공정성", "규칙"],
         },
         {
             "name": "Off-topic (돈 얘기)",
             "user_msg": "예술관이 이익 보겠지 뭐",
-            "keywords": ["공정", "공정성"],
         },
         {
             "name": "Off-topic (기술 얘기)",
             "user_msg": "AI 기술이 정말 발전했네요",
-            "keywords": ["공정", "공정성"],
         },
         {
             "name": "모르겠다",
             "user_msg": "글쎄요, 잘 모르겠어요",
-            "keywords": ["공정", "공정성"],
         },
     ]
 
@@ -139,8 +128,7 @@ async def test_colleague2_scenario():
             session_id=session_id,
             user_message=tc["user_msg"],
             conversation_history=conversation,
-            topic_context="AI 예술 전시 - 협회 투표 (찬성 입장)",
-            question_keywords=tc["keywords"]
+            topic_context="AI 예술 전시 - 협회 투표 (찬성 입장)"
         )
 
         print(f"\n🎯 전략: {result['strategy']}")
@@ -166,18 +154,15 @@ async def test_multi_turn_conversation():
     turns = [
         {
             "agent": "AI 전시에 대해 어떻게 생각하나? 우려되는 점이 있어?",
-            "user": "돈 벌겠지 뭐",  # Off-topic
-            "keywords": ["우려", "걱정", "피해"],
+            "user": "돈 벌겠지 뭐",
         },
         {
             "agent": "그렇긴 하지. 근데 혹시 걱정되는 부분은 없어?",  # 재연결
-            "user": "기존 화가들이 힘들어질 것 같아",  # 정상 답변
-            "keywords": ["우려", "걱정", "피해"],
+            "user": "기존 화가들이 힘들어질 것 같아",
         },
         {
             "agent": "그렇구나. 그 화가들 입장에서는 어떨 것 같아?",
-            "user": "무슨 말이야?",  # 이해 못함
-            "keywords": ["입장", "관점", "생각"],
+            "user": "무슨 말이야?",
         },
     ]
 
@@ -195,8 +180,7 @@ async def test_multi_turn_conversation():
             session_id=session_id,
             user_message=turn["user"],
             conversation_history=conversation,
-            topic_context="AI 예술 전시",
-            question_keywords=turn["keywords"]
+            topic_context="AI 예술 전시"
         )
 
         print(f"\n🎯 전략: {result['strategy']}")

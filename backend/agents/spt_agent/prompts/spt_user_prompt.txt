@@ -1,0 +1,12 @@
+Topic: {topic_context}
+
+Recent conversation:
+{history_text}
+
+User's last statement: "{user_message}"
+
+Analyze the conversation context and generate instructions for the Persona Agent.
+Instructions should include:
+1. How to respond to user's statement (empathize/acknowledge/question)
+2. Which SPT strategy to apply (perspective taking, similar experience, etc.)
+3. Specific question or statement suggestion (if needed)
