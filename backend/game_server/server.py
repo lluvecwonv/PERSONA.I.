@@ -17,8 +17,12 @@ import logging
 import asyncpg
 import json
 
-# 로깅 설정
-logging.basicConfig(level=logging.INFO)
+# 로깅 설정 (잘림 방지)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 logger = logging.getLogger(__name__)
 
 # DB 연결 풀
