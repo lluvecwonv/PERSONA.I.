@@ -241,7 +241,7 @@ Follow these instructions while maintaining your character's stance and speech s
         """
         try:
             reflection = await self._generate_self_reflection(messages, temperature=0.3)
-            logger.info(f"✨ [Colleague1] Self-reflection: {reflection[:100]}...")
+            logger.info(f"✨ [Colleague1] Self-reflection: {reflection}")
 
             spt_needed = self._parse_spt_necessity(reflection)
 
@@ -262,7 +262,7 @@ Follow these instructions while maintaining your character's stance and speech s
                     )
 
                     spt_instruction = spt_result["instruction"]
-                    logger.info(f"🧠 [Colleague1] SPT instruction: {spt_instruction[:100]}...")
+                    logger.info(f"🧠 [Colleague1] SPT instruction: {spt_instruction}")
 
                     if spt_result.get("suggested_keywords"):
                         self._store_keywords(session_id, spt_result["suggested_keywords"])
@@ -293,7 +293,7 @@ Follow these instructions while maintaining your character's stance and speech s
                 history.add_user_message(last_user_msg)
             history.add_ai_message(cleaned_content)
 
-            logger.info(f"✅ [Colleague1] session_id={session_id}, response: '{cleaned_content[:50]}...'")
+            logger.info(f"✅ [Colleague1] session_id={session_id}, response: '{cleaned_content}'")
             return cleaned_content
 
         except Exception as e:
@@ -312,7 +312,7 @@ Follow these instructions while maintaining your character's stance and speech s
         """
         try:
             reflection = await self._generate_self_reflection(messages, temperature=0.3)
-            logger.info(f"✨ [Colleague1] Self-reflection: {reflection[:100]}...")
+            logger.info(f"✨ [Colleague1] Self-reflection: {reflection}")
 
             spt_needed = self._parse_spt_necessity(reflection)
 
@@ -333,7 +333,7 @@ Follow these instructions while maintaining your character's stance and speech s
                     )
 
                     spt_instruction = spt_result["instruction"]
-                    logger.info(f"🧠 [Colleague1] SPT instruction: {spt_instruction[:100]}...")
+                    logger.info(f"🧠 [Colleague1] SPT instruction: {spt_instruction}")
 
                     if spt_result.get("suggested_keywords"):
                         self._store_keywords(session_id, spt_result["suggested_keywords"])
@@ -370,7 +370,7 @@ Follow these instructions while maintaining your character's stance and speech s
                 history.add_user_message(last_user_msg)
             history.add_ai_message(cleaned_response)
 
-            logger.info(f"✅ [Colleague1] session_id={session_id}, streamed: '{cleaned_response[:50]}...'")
+            logger.info(f"✅ [Colleague1] session_id={session_id}, streamed: '{cleaned_response}'")
 
         except Exception as e:
             logger.error(f"❌ [Colleague1] Streaming error: {e}", exc_info=True)

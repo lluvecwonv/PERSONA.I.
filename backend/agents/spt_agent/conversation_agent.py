@@ -354,7 +354,7 @@ class SPTAgent:
 
             result = await llm.ainvoke(lc_messages)
             raw_content = result.content if hasattr(result, "content") else str(result)
-            logger.info(f"🧠 [SPT] Raw response ({len(raw_content)} chars): '{raw_content[:100] if raw_content else 'EMPTY'}...'")
+            logger.info(f"🧠 [SPT] Raw response ({len(raw_content)} chars): '{raw_content if raw_content else 'EMPTY'}'")
 
             cleaned_content = clean_gpt_response(raw_content)
 
@@ -364,7 +364,7 @@ class SPTAgent:
                 history.add_user_message(last_user_msg)
             history.add_ai_message(cleaned_content)
 
-            logger.info(f"✅ [SPT] session_id={session_id}, response: '{cleaned_content[:50]}...'")
+            logger.info(f"✅ [SPT] session_id={session_id}, response: '{cleaned_content}'")
             return cleaned_content
         except Exception as e:
             logger.error(f"❌ [SPT] Error generating response: {e}", exc_info=True)
@@ -413,7 +413,7 @@ class SPTAgent:
                     history.add_user_message(last_user_msg)
             history.add_ai_message(cleaned_response)
 
-            logger.info(f"✅ [SPT] session_id={session_id}, streamed: '{cleaned_response[:50]}...'")
+            logger.info(f"✅ [SPT] session_id={session_id}, streamed: '{cleaned_response}'")
 
         except Exception as e:
             logger.error(f"❌ [SPT] Error streaming response: {e}", exc_info=True)

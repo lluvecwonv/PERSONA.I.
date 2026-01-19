@@ -963,7 +963,7 @@ class LangChainService:
                 temperature=0.7,
                 max_tokens=300
             )
-            logger.info(f"🧠 [PROFILE_CHAT] SPT draft: '{spt_draft[:100] if spt_draft else 'EMPTY'}...'")
+            logger.info(f"🧠 [PROFILE_CHAT] SPT draft: '{spt_draft if spt_draft else 'EMPTY'}'")
             claims_warning = ""
             if previous_ai_claims:
                 claims_list = "\n".join([f"- {claim}" for claim in previous_ai_claims[-3:]])  # 최근 3개만
@@ -993,7 +993,7 @@ class LangChainService:
                 session_id=session_id
             )
 
-            logger.info(f"🎭 [PROFILE_CHAT] Persona response: '{response_text[:100] if response_text else 'EMPTY'}' ({len(response_text) if response_text else 0} chars)")
+            logger.info(f"🎭 [PROFILE_CHAT] Persona response: '{response_text if response_text else 'EMPTY'}'")
 
             # refine 제거됨
 
@@ -1108,7 +1108,7 @@ class LangChainService:
                 temperature=0.7,
                 max_tokens=300
             )
-            logger.info(f"🧠 [PROFILE_STREAM] SPT draft: '{spt_draft[:100] if spt_draft else 'EMPTY'}...'")
+            logger.info(f"🧠 [PROFILE_STREAM] SPT draft: '{spt_draft if spt_draft else 'EMPTY'}'")
             claims_warning = ""
             if previous_ai_claims:
                 claims_list = "\n".join([f"- {claim}" for claim in previous_ai_claims[-3:]])  # 최근 3개만
@@ -1136,7 +1136,7 @@ class LangChainService:
                 max_tokens=max_tokens,
                 session_id=session_id
             )
-            logger.info(f"🎭 [PROFILE_STREAM] Persona response: '{full_response[:100] if full_response else 'EMPTY'}...'")
+            logger.info(f"🎭 [PROFILE_STREAM] Persona response: '{full_response if full_response else 'EMPTY'}'")
 
             # refine 제거됨
             refined_response = full_response
