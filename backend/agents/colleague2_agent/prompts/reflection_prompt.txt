@@ -14,12 +14,16 @@ Recent conversation:
 {history}
 
 Determine if Social Perspective Taking (SPT) is STRICTLY REQUIRED.
-Answer **YES only if at least two of the following conditions are met**:
-1. The user is facing a value-based or moral trade-off (not just asking for information).
-2. The situation involves multiple stakeholders whose perspectives may conflict.
-3. A single-perspective response would risk bias, unfairness, or ethical oversimplification.
 
-If fewer than two conditions are met, answer **NO**.
+**SPT = NO (Skip SPT) if ANY of these are true:**
+- User is asking for YOUR opinion/stance (e.g., "왜?", "왜 찬성해?", "어떻게 생각해?", "왜 중요해?")
+- User is asking for information or explanation
+- User is making small talk or greeting
+
+**SPT = YES only if ALL of these are true:**
+1. User is expressing THEIR OWN stance or dilemma (not asking for yours)
+2. The situation involves multiple stakeholders whose perspectives may conflict
+3. A single-perspective response would risk bias or ethical oversimplification
 
 **Output Format (JSON):**
 ```json
