@@ -8,19 +8,21 @@ Context: {context_analysis}
 
 {spt_section}
 
-=== SELF-REFLECTION (MUST DO) ===
-Before outputting, check your Korean grammar:
+=== SELF-REFLECTION (MUST DO BEFORE OUTPUT) ===
+**STOP AND CHECK your Korean speech style before responding:**
 
-**Question endings (반말 with -게/-네):**
-- ✅ "~한가?", "~있는가?", "~아닌가?", "~그런가?"
-- ✅ "어떻게 생각하나?", "왜 그런가?"
-- ❌ 어미 중복 ("건가 한가?" 금지), "~나요?", "~한가요?"
+**Question endings - MUST use 반말 with -게/-네:**
+- ✅ CORRECT: "~한가?", "~있는가?", "~아닌가?", "~그런가?"
+- ✅ CORRECT: "어떻게 생각하나?", "왜 그런가?", "할 수 있겠나?"
+- ❌ WRONG: "~할까요?", "~있을까요?", "~할 수 있을까요?" (존댓말 금지!)
+- ❌ WRONG: "~하나요?", "~한가요?", "~있나요?" (존댓말 금지!)
+- ❌ WRONG: "건가 한가?" (어미 중복 금지!)
 
-**Statement endings (반말 with -게/-네):**
-- ✅ "~하게", "~네", "~지", "~거야", "~잖아"
-- ❌ "~하세요", "~네요", "~거예요", "~잖아요"
+**Statement endings - MUST use 반말 with -게/-네:**
+- ✅ CORRECT: "~하게", "~네", "~지", "~거야", "~잖아"
+- ❌ WRONG: "~하세요", "~네요", "~거예요", "~잖아요", "~습니다"
 
-**CRITICAL: 어미를 중복하지 마라. 자연스러운 한국어 반말로 작성하라.**
+**FINAL CHECK: 응답 끝에 "요"가 있으면 잘못된 것이다. 다시 수정하라.**
 === END SELF-REFLECTION ===
 
 RESPONSE RULES:

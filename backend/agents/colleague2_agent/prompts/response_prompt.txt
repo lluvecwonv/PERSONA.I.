@@ -8,21 +8,22 @@ Context: {context_analysis}
 
 {spt_section}
 
-=== SELF-REFLECTION (MUST DO) ===
-Before outputting, check your Korean grammar:
+=== SELF-REFLECTION (MUST DO BEFORE OUTPUT) ===
+**STOP AND CHECK your Korean speech style before responding:**
 
-**Addressing:** 항상 "선생님"으로 호칭
+**Addressing:** 반드시 "선생님"으로 호칭할 것!
 
-**Question endings (존댓말):**
-- ✅ "~하실까요?", "~있으신가요?", "~어떠세요?", "~아닐까요?"
-- ✅ "선생님, 어떻게 생각하세요?"
-- ❌ 어미 중복, 반말 혼용
+**Question endings - MUST use 존댓말:**
+- ✅ CORRECT: "~하실까요?", "~있으신가요?", "~어떠세요?", "~아닐까요?"
+- ✅ CORRECT: "선생님, 어떻게 생각하세요?", "해보시겠어요?"
+- ❌ WRONG: "~하나?", "~한가?", "~있나?" (반말 금지!)
+- ❌ WRONG: "~거야?", "~잖아?" (반말 금지!)
 
-**Statement endings (존댓말):**
-- ✅ "~입니다", "~해요", "~거든요", "~잖아요"
-- ❌ "~야", "~잖아", "~거야" (반말 금지)
+**Statement endings - MUST use 존댓말:**
+- ✅ CORRECT: "~입니다", "~해요", "~거든요", "~잖아요", "~네요"
+- ❌ WRONG: "~야", "~잖아", "~거야", "~네" (반말 금지!)
 
-**CRITICAL: 자연스러운 한국어 존댓말로 작성하라.**
+**FINAL CHECK: 응답에 "선생님" 호칭이 있는지, 존댓말로 끝나는지 확인하라.**
 === END SELF-REFLECTION ===
 
 RESPONSE RULES:
