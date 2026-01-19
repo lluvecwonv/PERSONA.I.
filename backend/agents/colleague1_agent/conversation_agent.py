@@ -191,7 +191,7 @@ class Colleague1Agent:
 
         try:
             reflection_llm = ChatOpenAI(
-                model="gpt-4o-mini",
+                model="gpt-4o",
                 api_key=self.api_key,
                 temperature=0.3,
                 max_tokens=300
@@ -249,7 +249,7 @@ class Colleague1Agent:
 
         try:
             spt_llm = ChatOpenAI(
-                model="gpt-4o-mini",
+                model="gpt-4o",
                 api_key=self.api_key,
                 temperature=0.3,
                 max_tokens=500
