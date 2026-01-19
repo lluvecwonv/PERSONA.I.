@@ -9,11 +9,11 @@ import logging
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 환경 변수 로드 (올바른 경로 지정)
-load_dotenv(dotenv_path=Path(__file__).parent / "moral_agent_website" / ".env")
+# 환경 변수 로드
+load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
 # Backend path 추가
-backend_path = Path(__file__).parent / "moral_agent_website" / "backend"
+backend_path = Path(__file__).parent / "backend"
 sys.path.insert(0, str(backend_path))
 
 # 로깅 설정 (DEBUG 레벨로 변경해서 모든 로그 확인)
@@ -92,10 +92,10 @@ async def test_conversation():
                 stored_keywords = jangmo._get_stored_keywords("test_conversation")
 
                 spt_result = await jangmo.spt_agent_v2.process(
-                    session_id=f"{jangmo._get_character_name()}_test_conversation",
+                    session_id=f"장모_test_conversation",
                     user_message=last_user_msg,
                     conversation_history=messages,
-                    topic_context=jangmo._get_topic_context(),
+                    topic_context="AI 복원",
                     question_keywords=stored_keywords
                 )
 

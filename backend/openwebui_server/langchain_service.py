@@ -31,6 +31,13 @@ logger = logging.getLogger(__name__)
 
 
 class LangChainService:
+    PROFILE_INITIAL_MESSAGES = {
+        "jangmo": "아무리 생각해도 이 기술은 너무 비윤리적이지 않니?",
+        "son": "아버지, 저는요.. 이 기술이 가져올 행복이 더 크다고 생각해요. 동의하지 않으세요?",
+        "colleague1": "AI가 그린 그림을 어떻게 국립 예술관에 전시를 할 수가 있지? 그걸 예술로 공식적으로 인정한다는 건 말이 안 되네. 나는 무조건 전시 반대에 투표할걸세.",
+        "colleague2": "선생님, 저는 AI 예술도 사람들에게 감동을 주면 충분히 가치 있다고 생각해요.",
+    }
+
     def __init__(self):
         # Open WebUI 전용 세션
         self.sessions_openwebui: Dict[str, Dict[str, Any]] = {}
@@ -78,6 +85,16 @@ class LangChainService:
         self.agent = self.artist_apprentice_agent
         self.db_service = DatabaseService()
         self.openai_client = AsyncOpenAI(api_key=api_key)
+
+    def _get_initial_message(self, agent) -> str:
+        if hasattr(agent, "get_initial_message"):
+            return agent.get_initial_message()
+        return ""
+
+    def _get_profile_initial_message(self, agent_key: str, agent) -> str:
+        if hasattr(agent, "get_initial_message"):
+            return agent.get_initial_message()
+        return self.PROFILE_INITIAL_MESSAGES.get(agent_key, "")
 
         logger.info("LangChainService initialized (Open WebUI + Game Server sessions separated)")
 
@@ -147,7 +164,7 @@ class LangChainService:
         return state
 
     async def _handle_first_message(self, agent, message: str, session_id: str, state: Dict[str, Any], include_audio: bool, voice: str) -> Dict[str, Any]:
-        initial_message = agent.get_initial_message()
+        initial_message = self._get_initial_message(agent)
         user_content = message if message else "[시작]"
 
         state["messages"].append({"role": "user", "content": user_content})
@@ -332,7 +349,7 @@ class LangChainService:
             state = self._get_or_reset_state(session_id, force_reset)
 
             if is_first_message:
-                initial_message = agent.get_initial_message()
+                initial_message = self._get_initial_message(agent)
                 user_content = message if message else "[시작]"
 
                 state["messages"].append({"role": "user", "content": user_content})
@@ -612,7 +629,7 @@ class LangChainService:
             if message:
                 session_data["messages"].append({"role": "user", "content": message})
 
-            initial_message = agent.get_initial_message()
+            initial_message = self._get_profile_initial_message(agent_key, agent)
             session_data["messages"].append({"role": "assistant", "content": initial_message})
             session_data["turn_count"] = 1
             result_dict = {
@@ -739,7 +756,7 @@ class LangChainService:
             if message:
                 session_data["messages"].append({"role": "user", "content": message})
 
-            initial_message = agent.get_initial_message()
+            initial_message = self._get_profile_initial_message(agent_key, agent)
             session_data["messages"].append({"role": "assistant", "content": initial_message})
             session_data["turn_count"] = 1
             for char in initial_message:

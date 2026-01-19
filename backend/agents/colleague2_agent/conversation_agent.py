@@ -86,7 +86,6 @@ class Colleague2Agent:
             logger.error(f"Failed to load Colleague2 system prompt: {e}")
             self.system_prompt = "당신은 AI 예술 전시를 찬성하는 30대 남성 화가입니다. 예술의 대중화, 감동과 즐거움, 새로운 가능성을 중시합니다. 존댓말로 대화합니다."
 
-
     def get_session_history(self, session_id: str) -> BaseChatMessageHistory:
         """✨ 세션별 히스토리 가져오기 (없으면 생성)"""
         if session_id not in self.session_store:
@@ -101,52 +100,6 @@ class Colleague2Agent:
             logger.info(f"✅ [Colleague2] Cleared session: {session_id}")
             return True
         return False
-
-    def refine_response_with_gemini(self, gpt_response: str, user_input: str, messages: List[Dict[str, str]] = None) -> str:
-        """
-        ✨ Gemini로 GPT 응답 검증 및 수정
-        - prompts/gemini_refinement.txt 파일을 로드하여 사용
-        - messages를 받아서 대화 맥락(context) 전달
-        """
-        try:
-            prompt_path = Path(__file__).parent / "prompts" / "gemini_refinement.txt"
-            with open(prompt_path, "r", encoding="utf-8") as f:
-                prompt_template = f.read()
-
-            context = "(대화 맥락 없음)"
-            if messages:
-                recent_messages = messages[-16:] if len(messages) > 16 else messages
-                context_lines = []
-                for msg in recent_messages:
-                    role = "선생님" if msg.get("role") == "user" else "후배"
-                    content = msg.get("content", "")[:100]
-                    context_lines.append(f"{role}: {content}")
-                context = "\n".join(context_lines) if context_lines else "(대화 맥락 없음)"
-
-            refinement_prompt = prompt_template.format(
-                user_input=user_input,
-                gpt_response=gpt_response,
-                context=context
-            )
-
-            result = self.analyzer.invoke(refinement_prompt)
-            response = result.content.strip()
-
-            if response.startswith("PASS|"):
-                logger.info(f"✅ [Colleague2] Gemini validation: PASS")
-                return gpt_response
-            elif response.startswith("FIX|"):
-                refined = response[4:].strip()
-                logger.info(f"🔧 [Colleague2] Gemini refined: '{gpt_response[:30]}...' → '{refined[:30]}...'")
-                return refined
-            else:
-                logger.warning(f"⚠️ [Colleague2] Gemini format error, using original")
-                return gpt_response
-
-        except Exception as e:
-            logger.error(f"❌ [Colleague2] Gemini refinement error: {e}")
-            return gpt_response
-
 
     async def _generate_self_reflection(
         self,
@@ -195,6 +148,11 @@ class Colleague2Agent:
         """
         last_user_msg = self._extract_last_user_message(messages)
         recent_history = self._get_recent_history(messages, limit=3)
+        recent_response = ""
+        for msg in reversed(messages):
+            if msg.get("role") == "assistant" and msg.get("content"):
+                recent_response = msg["content"].strip()
+                break
 
         prompt_path = Path(__file__).parent / "prompts" / "reflection_prompt.txt"
         with open(prompt_path, "r", encoding="utf-8") as f:
@@ -203,54 +161,11 @@ class Colleague2Agent:
         reflection_instruction = template.format(
             system_prompt=self.system_prompt,
             last_user_msg=last_user_msg,
-            recent_history=recent_history
+            recent_history=recent_history,
+            recent_response=recent_response
         )
 
         return [SystemMessage(content=reflection_instruction)]
-
-    def _build_messages_with_reflection(
-        self,
-        messages: List[Dict[str, str]],
-        reflection: str
-    ) -> List:
-        """
-        Self-reflection을 포함한 프롬프트 구성
-
-        Args:
-            messages: 대화 메시지 리스트
-            reflection: 생성된 self-reflection 텍스트
-
-        Returns:
-            LangChain 메시지 리스트
-        """
-        system_prompt = self.system_prompt + f"""
-
-⚠️ 중요: 자기 성찰 결과 반영
-아래는 당신의 자기 성찰 결과입니다. 이를 바탕으로 응답하세요:
-
-{reflection}
-
-**응답 규칙:**
-- 위 성찰 결과를 바탕으로 캐릭터답게 응답
-- 반드시 2문장 이내로
-- 입장과 말투 유지
-- 대화 맥락 반영
-- '의무론', '의무론적', '공리주의', 'utilitarian' 단어 사용 금지
-"""
-
-        lc_messages = [SystemMessage(content=system_prompt)]
-
-        for msg in messages:
-            role = msg.get("role")
-            content = msg.get("content", "")
-            if not content:
-                continue
-            if role == "user":
-                lc_messages.append(HumanMessage(content=content))
-            else:
-                lc_messages.append(AIMessage(content=content))
-
-        return lc_messages
 
     def _build_messages_with_reflection_and_spt(
         self,
@@ -260,42 +175,26 @@ class Colleague2Agent:
     ) -> List:
         """
         Self-reflection + SPT instruction을 포함한 프롬프트 구성
-
-        Args:
-            messages: 대화 메시지 리스트
-            reflection: 생성된 self-reflection 텍스트
-            spt_instruction: SPT Agent V2가 제공한 지시사항 (선택적)
-
-        Returns:
-            LangChain 메시지 리스트
         """
-        system_prompt = self.system_prompt + f"""
+        prompt_path = Path(__file__).parent / "prompts" / "response_prompt.txt"
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            template = f.read()
 
-⚠️ 중요: 자기 성찰 결과 반영
-아래는 당신의 자기 성찰 결과입니다. 이를 바탕으로 응답하세요:
-
-{reflection}
-"""
-
+        spt_section = ""
         if spt_instruction:
-            system_prompt += f"""
-
-🧠 SPT 전략 지시사항:
+            spt_section = f"""
+🧠 SPT Strategy Instructions:
 {spt_instruction}
 
-위 지시사항을 따르되, 캐릭터의 입장과 말투를 유지하세요.
+Follow these instructions while maintaining your character's stance and speech style.
 """
 
-        system_prompt += """
+        response_instruction = template.format(
+            reflection=reflection,
+            spt_section=spt_section
+        )
 
-**응답 규칙:**
-- 위 성찰 결과를 바탕으로 캐릭터답게 응답
-- 반드시 2문장 이내로
-- 입장과 말투 유지
-- 대화 맥락 반영
-- '의무론', '의무론적', '공리주의', 'utilitarian' 단어 사용 금지
-"""
-
+        system_prompt = self.system_prompt + "\n\n" + response_instruction
         lc_messages = [SystemMessage(content=system_prompt)]
 
         for msg in messages:
@@ -345,16 +244,17 @@ class Colleague2Agent:
             logger.info(f"✨ [Colleague2] Self-reflection: {reflection[:100]}...")
 
             spt_needed = self._parse_spt_necessity(reflection)
+
+            last_user_msg = self._extract_last_user_message(messages)
             logger.info(f"🔍 [Colleague2] SPT needed: {spt_needed}")
 
             spt_instruction = None
             if spt_needed and self.spt_agent_v2:
-                last_user_msg = self._extract_last_user_message(messages)
                 stored_keywords = self._get_stored_keywords(session_id)
 
                 try:
                     spt_result = await self.spt_agent_v2.process(
-                        session_id=f"colleague2_{session_id}",  # 에이전트별 고유 세션
+                        session_id=f"후배 화가_{session_id}",  # 에이전트별 고유 세션
                         user_message=last_user_msg,
                         conversation_history=messages,
                         topic_context="AI 예술",
@@ -377,17 +277,11 @@ class Colleague2Agent:
             raw_content = result.content.strip()
             cleaned_content = clean_gpt_response(raw_content)
 
-            last_user_msg = self._extract_last_user_message(messages)
-            if last_user_msg and hasattr(self, 'analyzer'):
-                cleaned_content = self.refine_response_with_gemini(
-                    cleaned_content, last_user_msg, messages
-                )
-
             if spt_needed and self.spt_agent_v2 and spt_instruction:
                 try:
                     has_question = "?" in cleaned_content
                     self.spt_agent_v2.update_after_agent_response(
-                        session_id=f"colleague2_{session_id}",
+                        session_id=f"후배 화가_{session_id}",
                         agent_response=cleaned_content,
                         asked_question=has_question
                     )
@@ -404,7 +298,7 @@ class Colleague2Agent:
 
         except Exception as e:
             logger.error(f"❌ [Colleague2] Error: {e}", exc_info=True)
-            return self._get_error_message()
+            return "선생님, 다시 한 번만 말씀해주시겠어요?"
 
     async def chat_stream(
         self,
@@ -421,19 +315,20 @@ class Colleague2Agent:
             logger.info(f"✨ [Colleague2] Self-reflection: {reflection[:100]}...")
 
             spt_needed = self._parse_spt_necessity(reflection)
+
+            last_user_msg = self._extract_last_user_message(messages)
             logger.info(f"🔍 [Colleague2] SPT needed: {spt_needed}")
 
             spt_instruction = None
             if spt_needed and self.spt_agent_v2:
-                last_user_msg = self._extract_last_user_message(messages)
                 stored_keywords = self._get_stored_keywords(session_id)
 
                 try:
                     spt_result = await self.spt_agent_v2.process(
-                        session_id=f"{self._get_character_name()}_{session_id}",
+                        session_id=f"후배 화가_{session_id}",
                         user_message=last_user_msg,
                         conversation_history=messages,
-                        topic_context=self._get_topic_context(),
+                        topic_context="AI 예술",
                         question_keywords=stored_keywords
                     )
 
@@ -462,7 +357,7 @@ class Colleague2Agent:
                 try:
                     has_question = "?" in cleaned_response
                     self.spt_agent_v2.update_after_agent_response(
-                        session_id=f"colleague2_{session_id}",
+                        session_id=f"후배 화가_{session_id}",
                         agent_response=cleaned_response,
                         asked_question=has_question
                     )
@@ -479,7 +374,7 @@ class Colleague2Agent:
 
         except Exception as e:
             logger.error(f"❌ [Colleague2] Streaming error: {e}", exc_info=True)
-            for char in self._get_error_message():
+            for char in "선생님, 다시 한 번만 말씀해주시겠어요?":
                 yield char
 
     def _extract_chunk_text(self, chunk) -> str:
@@ -561,19 +456,3 @@ class Colleague2Agent:
             저장된 키워드 리스트 (없으면 빈 리스트)
         """
         return self._session_keywords.get(session_id, [])
-
-    def _get_error_message(self) -> str:
-        """에러 발생 시 반환할 메시지"""
-        return "선생님, 다시 한 번만 말씀해주시겠어요?"
-
-    def get_initial_message(self) -> str:
-        """
-        첫 메시지 반환 - 대화 시작 멘트
-        """
-        return "선생님, 저는 AI 예술도 사람들에게 감동을 주면 충분히 가치 있다고 생각해요."
-
-    def get_final_message(self) -> str:
-        """
-        마무리 멘트 (10턴 후)
-        """
-        return "선생님, 좋은 말씀 감사합니다. 투표 때 신중하게 결정해주시길 바랍니다."

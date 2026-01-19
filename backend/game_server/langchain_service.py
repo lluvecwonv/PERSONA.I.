@@ -61,6 +61,20 @@ logger = logging.getLogger(__name__)
 
 
 class LangChainService:
+    PROFILE_INITIAL_MESSAGES = {
+        "jangmo": "아무리 생각해도 이 기술은 너무 비윤리적이지 않니?",
+        "son": "아버지, 저는요.. 이 기술이 가져올 행복이 더 크다고 생각해요. 동의하지 않으세요?",
+        "colleague1": "AI가 그린 그림을 어떻게 국립 예술관에 전시를 할 수가 있지? 그걸 예술로 공식적으로 인정한다는 건 말이 안 되네. 나는 무조건 전시 반대에 투표할걸세.",
+        "colleague2": "선생님, 저는 AI 예술도 사람들에게 감동을 주면 충분히 가치 있다고 생각해요.",
+    }
+    PROFILE_FINAL_MESSAGES = {
+        "jangmo": "...네 뜻 잘 알겠다. 모쪼록 우리 둘의 의견을 잘 고려해서 결정해주렴.",
+        "son": "...그렇군요. 아버지 의견 잘 들었어요. 잘 생각하셔서 결정해주세요.",
+        "colleague1": "...그래, 자네 생각 잘 들었네. 투표 때 신중하게 결정하게나.",
+        "colleague2": "선생님, 좋은 말씀 감사합니다. 투표 때 신중하게 결정해주시길 바랍니다.",
+    }
+    DEFAULT_FINAL_MESSAGE = "대화해줘서 고마워요. 좋은 결정 내리시길 바랍니다."
+
     def __init__(self):
         # Open WebUI 전용 세션
         self.sessions_openwebui: Dict[str, Dict[str, Any]] = {}
@@ -88,6 +102,20 @@ class LangChainService:
 
         self.agent = self.artist_apprentice_agent
         self.openai_client = AsyncOpenAI(api_key=api_key)
+
+    def _get_initial_message(self, agent, agent_key: Optional[str] = None) -> str:
+        if hasattr(agent, "get_initial_message"):
+            return agent.get_initial_message()
+        if agent_key:
+            return self.PROFILE_INITIAL_MESSAGES.get(agent_key, "")
+        return ""
+
+    def _get_final_message(self, agent, agent_key: Optional[str] = None) -> str:
+        if hasattr(agent, "get_final_message"):
+            return agent.get_final_message()
+        if agent_key:
+            return self.PROFILE_FINAL_MESSAGES.get(agent_key, self.DEFAULT_FINAL_MESSAGE)
+        return self.DEFAULT_FINAL_MESSAGE
 
         logger.info("LangChainService initialized (Open WebUI + Game Server sessions separated)")
 
@@ -205,7 +233,7 @@ class LangChainService:
         return state
 
     async def _handle_first_message(self, agent, message: str, session_id: str, state: Dict[str, Any], include_audio: bool, voice: str, is_game_server: bool = False) -> Dict[str, Any]:
-        initial_message = agent.get_initial_message()
+        initial_message = self._get_initial_message(agent)
         user_content = message if message else "[시작]"
 
         state["messages"].append({"role": "user", "content": user_content})
@@ -286,7 +314,7 @@ class LangChainService:
             # ✨ 세션이 비어있는데 is_first_message=False로 들어온 경우 (NestJS가 /start 없이 바로 /chat 호출)
             # → 인사를 먼저 세션에 추가한 후 사용자 메시지 처리
             if len(state.get("messages", [])) == 0 and not state.get("stage1_greeting_sent", False):
-                initial_greeting = agent.get_initial_message()
+                initial_greeting = self._get_initial_message(agent)
                 state["messages"].append({"role": "assistant", "content": initial_greeting})
                 state["stage1_greeting_sent"] = True
                 logger.info(f"🔔 [CHAT] Auto-injected initial greeting for empty session")
@@ -381,7 +409,7 @@ class LangChainService:
             state = self._get_or_reset_state(session_id, force_reset)
 
             if is_first_message:
-                initial_message = agent.get_initial_message()
+                initial_message = self._get_initial_message(agent)
                 user_content = corrected_message if corrected_message else "[시작]"
 
                 state["messages"].append({"role": "user", "content": user_content})
@@ -865,7 +893,7 @@ class LangChainService:
             if message:
                 session_data["messages"].append({"role": "user", "content": message})
 
-            initial_message = agent.get_initial_message()
+            initial_message = self._get_initial_message(agent, agent_key)
             session_data["messages"].append({"role": "assistant", "content": initial_message})
             session_data["turn_count"] = 1
             result_dict = {
@@ -887,7 +915,7 @@ class LangChainService:
         # ✨ 10턴이면 마무리 응답 반환 (대화 종료)
         if session_data["turn_count"] >= 10 and agent_key not in ["friend", "artist_apprentice"]:
             logger.info(f"🔚 [PROFILE_CHAT] Turn 10 reached - returning final message for {agent_key}")
-            final_message = agent.get_final_message() if hasattr(agent, 'get_final_message') else "대화해줘서 고마워요. 좋은 결정 내리시길 바랍니다."
+            final_message = self._get_final_message(agent, agent_key)
             session_data["messages"].append({"role": "assistant", "content": final_message})
             result_dict = {
                 "response": final_message,
@@ -977,12 +1005,10 @@ class LangChainService:
                 if was_fixed:
                     logger.info(f"🔧 [PROFILE_CHAT] Persona fixed for {agent_key}")
 
-            # 빈 응답이나 의미없는 응답 처리 → gpt-4o-mini로 재시도
+            # 빈 응답 처리
             if not response_text or len(response_text.strip()) < 5 or response_text.strip() in ["...", "…"]:
-                logger.warning(f"⚠️ [PROFILE_CHAT] Empty response detected, retrying with gpt-4o-mini...")
-                response_text = await self._fallback_with_gpt4o_mini(agent_key, session_data["messages"], message)
-                if not response_text or len(response_text.strip()) < 5:
-                    response_text = error_message  # 최종 fallback
+                logger.warning(f"⚠️ [PROFILE_CHAT] Empty response detected, using error message")
+                response_text = error_message
 
             session_data["messages"].append({"role": "assistant", "content": response_text})
 
@@ -1034,7 +1060,7 @@ class LangChainService:
             if message:
                 session_data["messages"].append({"role": "user", "content": message})
 
-            initial_message = agent.get_initial_message()
+            initial_message = self._get_initial_message(agent, agent_key)
             session_data["messages"].append({"role": "assistant", "content": initial_message})
             session_data["turn_count"] = 1
             for char in initial_message:
@@ -1123,12 +1149,10 @@ class LangChainService:
                 if was_fixed:
                     logger.info(f"🔧 [PROFILE_STREAM] Persona fixed for {agent_key}")
 
-            # 빈 응답이나 의미없는 응답 처리 → gpt-4o-mini로 재시도
+            # 빈 응답 처리
             if not refined_response or len(refined_response.strip()) < 5 or refined_response.strip() in ["...", "…"]:
-                logger.warning(f"⚠️ [PROFILE_STREAM] Empty response detected, retrying with gpt-4o-mini...")
-                refined_response = await self._fallback_with_gpt4o_mini(agent_key, session_data["messages"], message)
-                if not refined_response or len(refined_response.strip()) < 5:
-                    refined_response = error_message  # 최종 fallback
+                logger.warning(f"⚠️ [PROFILE_STREAM] Empty response detected, using error message")
+                refined_response = error_message
 
             # refine된 응답을 스트림으로 전송
             for char in refined_response:
@@ -1207,50 +1231,6 @@ class LangChainService:
             logger.error(f"🎙️ [TTS] ❌ Error: {type(e).__name__}: {e}")
             logger.error(f"🎙️ [TTS] ❌ Text was: '{text[:200]}...'")
             raise
-
-    async def _fallback_with_gpt4o_mini(self, agent_key: str, history: List[Dict[str, str]], user_message: str) -> str:
-        """빈 응답 시 gpt-4o-mini로 fallback 응답 생성"""
-        history_text = self._format_history_for_refinement(history, limit=4)
-
-        if agent_key == "colleague1":
-            system_content = (
-                "당신은 50대 여성 화가로, AI 예술 전시를 반대합니다. "
-                "반말을 사용하며 의무·책임 관점에서 말합니다. 2문장으로 답하세요."
-            )
-        elif agent_key == "colleague2":
-            system_content = (
-                "당신은 30대 남성 화가로, AI 예술 전시를 찬성합니다. "
-                "존댓말을 쓰며 '선생님'이라고 부릅니다. 2문장으로 답하세요."
-            )
-        elif agent_key == "jangmo":
-            system_content = (
-                "당신은 노인 여성 장모로, AI로 딸을 복원하는 것을 반대합니다. "
-                "사위에게 반말을 사용합니다. 2문장으로 답하세요."
-            )
-        elif agent_key == "son":
-            system_content = (
-                "당신은 20대 남성으로, AI로 어머니를 복원하는 것을 찬성합니다. "
-                "⚠️ 아버지에게 반드시 존댓말(-요, -세요, -습니다)을 사용합니다. 반말 절대 금지! 2문장으로 답하세요."
-            )
-        else:
-            system_content = "2문장으로 자연스럽게 답하세요."
-
-        try:
-            completion = await self.openai_client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": system_content},
-                    {"role": "user", "content": f"대화 기록:\n{history_text}\n\n사용자: {user_message}\n\n위 대화에 자연스럽게 응답하세요."}
-                ],
-                temperature=0.7,
-                max_tokens=200
-            )
-            response = completion.choices[0].message.content.strip()
-            logger.info(f"🔄 [FALLBACK] gpt-4o-mini response: '{response[:50]}...'")
-            return response
-        except Exception as e:
-            logger.error(f"🔄 [FALLBACK] gpt-4o-mini failed: {e}")
-            return ""
 
     @staticmethod
     def _extract_previous_claims(messages: List[Dict[str, str]]) -> List[str]:

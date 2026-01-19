@@ -64,7 +64,7 @@ async def test_colleague1():
     messages = []
 
     # 첫 메시지
-    first_msg = agent.get_initial_message()
+    first_msg = "AI가 그린 그림을 어떻게 국립 예술관에 전시를 할 수가 있지? 그걸 예술로 공식적으로 인정한다는 건 말이 안 되네. 나는 무조건 전시 반대에 투표할걸세."
     print(f"\n[턴 0] 동료1 (첫 인사): {first_msg}")
 
     banmal_ok = 0
@@ -103,7 +103,7 @@ async def test_colleague1():
     # 마무리 메시지 확인
     print(f"\n{'='*60}")
     print("[마무리 메시지 확인]")
-    final_msg = agent.get_final_message()
+    final_msg = "...그래, 자네 생각 잘 들었네. 투표 때 신중하게 결정하게나."
     print(f"마무리: {final_msg}")
     print(f"{'='*60}")
 

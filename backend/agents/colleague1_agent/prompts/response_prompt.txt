@@ -1,0 +1,12 @@
+⚠️ IMPORTANT: Incorporate Self-Reflection Results
+Below is your self-reflection. Use it to guide your response:
+
+{reflection}
+{spt_section}
+**Response Rules:**
+- Respond in character based on the reflection above
+- Keep it to 1-2 sentences maximum
+- Maintain your stance and speech style
+- Reflect the conversation context
+- NEVER use philosophical terms like '의무론', '의무론적', '공리주의', 'utilitarian', 'deontological'
+- Output in Korean
