@@ -1,13 +1,14 @@
 """
 Colleague1 Agent (동료 화가 - 의무론적 관점, AI 예술 반대)
 LangChain 기반 대화 에이전트
-✨ Two-Phase SPT Reflection (자기 인식 → 응답 생성)
+✨ Three-Phase Architecture: Basic Reflection → SPT Planner (조건부) → Response
 """
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 import logging
 import sys
 import os
+import json
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def _load_reflection_prompt() -> str:
-    """Load reflection prompt from this agent's prompts folder"""
+    """Load basic reflection prompt (Step 1, 2 only)"""
     prompt_path = Path(__file__).parent / "prompts" / "reflection_prompt.txt"
     try:
         with open(prompt_path, "r", encoding="utf-8") as f:
@@ -31,12 +32,34 @@ def _load_reflection_prompt() -> str:
         return ""
 
 
+def _load_spt_planner_prompt() -> str:
+    """Load SPT planner prompt (Step 3 - 5 questions)"""
+    prompt_path = Path(__file__).parent / "prompts" / "spt_planner_prompt.txt"
+    try:
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except Exception as e:
+        logger.error(f"Failed to load SPT planner prompt: {e}")
+        return ""
+
+
+def _load_response_prompt() -> str:
+    """Load response generation prompt (Phase 2)"""
+    prompt_path = Path(__file__).parent / "prompts" / "response_prompt.txt"
+    try:
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except Exception as e:
+        logger.error(f"Failed to load response prompt: {e}")
+        return ""
+
+
 class Colleague1Agent:
     """
     동료 화가 대화 에이전트 (AI 예술 반대 - 의무론적 관점)
     - LangChain ChatOpenAI 사용
     - 50대 여성 선배 화가 캐릭터
-    - ✨ Two-Phase SPT: 자기 인식 → 응답 생성
+    - ✨ Three-Phase: Basic Reflection → SPT Planner (조건부) → Response
     - 후배에게 반말 사용
     """
 
@@ -67,10 +90,20 @@ class Colleague1Agent:
             logger.error(f"Failed to load Colleague1 persona prompt: {e}")
             self.persona_prompt = "당신은 AI 예술에 반대하는 50대 여성 화가입니다. 의무와 책임을 근거로 반대 의견을 말합니다."
 
-        # Reflection Prompt 로드
+        # Reflection Prompt 로드 (Step 1, 2)
         self.reflection_prompt = _load_reflection_prompt()
         if self.reflection_prompt:
             logger.info("✅ Reflection prompt loaded successfully")
+
+        # SPT Planner Prompt 로드 (Step 3)
+        self.spt_planner_prompt = _load_spt_planner_prompt()
+        if self.spt_planner_prompt:
+            logger.info("✅ SPT Planner prompt loaded successfully")
+
+        # Response Prompt 로드 (Phase 2)
+        self.response_prompt = _load_response_prompt()
+        if self.response_prompt:
+            logger.info("✅ Response prompt loaded successfully")
 
     def get_session_history(self, session_id: str) -> BaseChatMessageHistory:
         """세션별 히스토리 가져오기 (없으면 생성)"""
@@ -103,34 +136,44 @@ class Colleague1Agent:
 
         return "\n".join(lines) if lines else "(No previous conversation)"
 
-    async def _perform_spt_reflection(
+    def _parse_json_response(self, text: str) -> Dict[str, Any]:
+        """LLM 응답에서 JSON 파싱"""
+        try:
+            # ```json ... ``` 블록 제거
+            if "```json" in text:
+                text = text.split("```json")[1].split("```")[0]
+            elif "```" in text:
+                text = text.split("```")[1].split("```")[0]
+            return json.loads(text.strip())
+        except Exception as e:
+            logger.error(f"JSON parsing error: {e}, text: {text[:200]}")
+            return {}
+
+    async def _perform_basic_reflection(
         self,
         messages: List[Dict[str, str]],
         last_user_msg: str,
         session_id: str
-    ) -> Dict[str, str]:
+    ) -> Dict[str, Any]:
         """
-        Phase 1: SPT 자기 인식 단계 - txt 파일 기반 프롬프트
-        디버그 로그에 전체 과정 출력
+        Phase 1: Basic Reflection - SPT 필요 여부만 판단
+        Returns: { spt_required: bool, context_analysis: str, user_utterance_type: str }
         """
-        logger.info(f"🧠 [PHASE1_START] session_id={session_id}, Performing SPT reflection...")
+        logger.info(f"🧠 [PHASE1_START] session_id={session_id}, Performing basic reflection...")
 
-        # 최근 대화 히스토리 구성
         history_text = self._format_history(messages)
 
-        # reflection_prompt.txt에서 플레이스홀더 치환
         reflection_prompt = self.reflection_prompt.format(
             last_user_msg=last_user_msg,
             history=history_text
         )
 
         try:
-            # 빠른 모델로 reflection 수행
             reflection_llm = ChatOpenAI(
                 model="gpt-4o-mini",
                 api_key=self.api_key,
                 temperature=0.3,
-                max_tokens=500
+                max_tokens=300
             )
 
             result = await reflection_llm.ainvoke([
@@ -138,18 +181,106 @@ class Colleague1Agent:
             ])
 
             reflection_text = result.content.strip()
+            logger.info(f"🧠 [PHASE1_OUTPUT] {reflection_text}")
 
-            # 디버그 로그 출력
-            logger.info(f"🧠 [SPT_REFLECTION] session_id={session_id}")
-            logger.info(f"🧠 [SPT_REFLECTION] User message: '{last_user_msg}'")
-            logger.info(f"🧠 [SPT_REFLECTION] Full output:\n{reflection_text}")
-            logger.info(f"🧠 [PHASE1_COMPLETE] Reflection done")
+            # JSON 파싱
+            parsed = self._parse_json_response(reflection_text)
 
-            return {"reflection": reflection_text}
+            spt_required = parsed.get("spt_required", False)
+            context_analysis = parsed.get("context_analysis", "")
+            user_utterance_type = parsed.get("user_utterance_type", "Question")
+
+            logger.info(f"🧠 [SPT_REQUIRED] {spt_required}")
+            logger.info(f"🧠 [PHASE1_COMPLETE] Basic reflection done")
+
+            return {
+                "spt_required": spt_required,
+                "context_analysis": context_analysis,
+                "user_utterance_type": user_utterance_type
+            }
 
         except Exception as e:
-            logger.error(f"🧠 [SPT_REFLECTION] Error: {e}")
-            return {"reflection": "Reflection failed - respond naturally based on persona."}
+            logger.error(f"🧠 [PHASE1_ERROR] {e}")
+            return {
+                "spt_required": False,
+                "context_analysis": "Reflection failed",
+                "user_utterance_type": "Question"
+            }
+
+    async def _perform_spt_planning(
+        self,
+        messages: List[Dict[str, str]],
+        last_user_msg: str,
+        session_id: str
+    ) -> Dict[str, Any]:
+        """
+        Phase 1.5: SPT Planner - 5개 질문 수행 (SPT=YES일 때만 호출)
+        Returns: { stakeholders, empathy_analysis, stance_alignment, blind_spot, strategic_question }
+        """
+        logger.info(f"🎯 [SPT_PLANNER_START] session_id={session_id}, Performing SPT planning...")
+
+        history_text = self._format_history(messages)
+
+        spt_prompt = self.spt_planner_prompt.format(
+            last_user_msg=last_user_msg,
+            history=history_text
+        )
+
+        try:
+            spt_llm = ChatOpenAI(
+                model="gpt-4o-mini",
+                api_key=self.api_key,
+                temperature=0.3,
+                max_tokens=500
+            )
+
+            result = await spt_llm.ainvoke([
+                SystemMessage(content=spt_prompt)
+            ])
+
+            spt_text = result.content.strip()
+            logger.info(f"🎯 [SPT_PLANNER_OUTPUT] {spt_text}")
+
+            # JSON 파싱
+            parsed = self._parse_json_response(spt_text)
+
+            strategic_question = parsed.get("strategic_question", "")
+            stakeholders = parsed.get("stakeholders", [])
+            blind_spot = parsed.get("blind_spot", "")
+
+            logger.info(f"🎯 [STRATEGIC_QUESTION] {strategic_question}")
+            logger.info(f"🎯 [SPT_PLANNER_COMPLETE] SPT planning done")
+
+            # Phase 2용 포맷팅된 섹션 생성
+            formatted_section = ""
+            if strategic_question:
+                formatted_section = f"""=== SPT ANALYSIS (MUST USE) ===
+Stakeholders: {', '.join(stakeholders)}
+Blind spot user is missing: {blind_spot}
+Strategic question to ask: {strategic_question}
+=== END SPT ===
+
+CRITICAL: You MUST include the strategic question in your response to guide the user's thinking."""
+
+            return {
+                "stakeholders": stakeholders,
+                "empathy_analysis": parsed.get("empathy_analysis", ""),
+                "stance_alignment": parsed.get("stance_alignment", ""),
+                "blind_spot": blind_spot,
+                "strategic_question": strategic_question,
+                "formatted_section": formatted_section
+            }
+
+        except Exception as e:
+            logger.error(f"🎯 [SPT_PLANNER_ERROR] {e}")
+            return {
+                "stakeholders": [],
+                "empathy_analysis": "",
+                "stance_alignment": "",
+                "blind_spot": "",
+                "strategic_question": "",
+                "formatted_section": ""
+            }
 
     def _create_llm(self, max_tokens: int, streaming: bool, temperature: float = 0.7) -> ChatOpenAI:
         """LLM 인스턴스 생성"""
@@ -168,6 +299,22 @@ class Colleague1Agent:
                 kwargs["max_tokens"] = max_tokens
         return ChatOpenAI(**kwargs)
 
+    def _build_response_prompt(
+        self,
+        reflection: Dict[str, Any],
+        spt_result: Optional[Dict[str, Any]]
+    ) -> str:
+        """Phase 2용 응답 생성 프롬프트 구성"""
+
+        # SPT 섹션은 SPT Planner에서 이미 포맷팅됨
+        spt_section = spt_result.get("formatted_section", "") if spt_result else ""
+
+        return self.response_prompt.format(
+            user_utterance_type=reflection.get('user_utterance_type', 'Question'),
+            context_analysis=reflection.get('context_analysis', ''),
+            spt_section=spt_section
+        )
+
     async def chat(
         self,
         messages: List[Dict[str, str]],
@@ -176,29 +323,28 @@ class Colleague1Agent:
         session_id: str = "default"
     ) -> str:
         """
-        Two-Phase 대화:
-        Phase 1: SPT 자기 인식 (디버그 로그 출력)
+        Three-Phase 대화:
+        Phase 1: Basic Reflection (SPT 필요 여부 판단)
+        Phase 1.5: SPT Planner (SPT=YES일 때만)
         Phase 2: 응답 생성
         """
         try:
             last_user_msg = self._extract_last_user_message(messages)
 
-            # Phase 1: SPT Reflection (디버그 로그 출력)
-            reflection = await self._perform_spt_reflection(messages, last_user_msg, session_id)
+            # Phase 1: Basic Reflection
+            reflection = await self._perform_basic_reflection(messages, last_user_msg, session_id)
+
+            # Phase 1.5: SPT Planning (조건부)
+            spt_result = None
+            if reflection.get("spt_required", False):
+                spt_result = await self._perform_spt_planning(messages, last_user_msg, session_id)
 
             # Phase 2: Response Generation
             logger.info(f"🎭 [PHASE2_START] session_id={session_id}, Generating response...")
 
             llm = self._create_llm(max_tokens, streaming=False, temperature=temperature)
 
-            # Phase 2 메시지 구성: Reflection 결과 + 대화 히스토리
-            combined_prompt = f"""Based on your self-reflection analysis below, generate your response in character.
-
-=== REFLECTION ANALYSIS ===
-{reflection['reflection']}
-=== END REFLECTION ===
-
-IMPORTANT: Output ONLY your final in-character response in Korean. Do NOT output the reflection analysis again."""
+            combined_prompt = self._build_response_prompt(reflection, spt_result)
 
             lc_messages = [SystemMessage(content=combined_prompt)]
             for msg in messages:
@@ -238,29 +384,28 @@ IMPORTANT: Output ONLY your final in-character response in Korean. Do NOT output
         session_id: str = "default"
     ):
         """
-        Two-Phase 스트리밍 대화:
-        Phase 1: SPT 자기 인식 (디버그 로그 출력)
+        Three-Phase 스트리밍 대화:
+        Phase 1: Basic Reflection (SPT 필요 여부 판단)
+        Phase 1.5: SPT Planner (SPT=YES일 때만)
         Phase 2: 응답 스트리밍
         """
         try:
             last_user_msg = self._extract_last_user_message(messages)
 
-            # Phase 1: SPT Reflection (디버그 로그 출력)
-            reflection = await self._perform_spt_reflection(messages, last_user_msg, session_id)
+            # Phase 1: Basic Reflection
+            reflection = await self._perform_basic_reflection(messages, last_user_msg, session_id)
+
+            # Phase 1.5: SPT Planning (조건부)
+            spt_result = None
+            if reflection.get("spt_required", False):
+                spt_result = await self._perform_spt_planning(messages, last_user_msg, session_id)
 
             # Phase 2: Response Generation (Streaming)
             logger.info(f"🎭 [PHASE2_START] session_id={session_id}, Generating streamed response...")
 
             llm = self._create_llm(max_tokens, streaming=True, temperature=temperature)
 
-            # Phase 2 메시지 구성: Reflection 결과 + 대화 히스토리
-            combined_prompt = f"""Based on your self-reflection analysis below, generate your response in character.
-
-=== REFLECTION ANALYSIS ===
-{reflection['reflection']}
-=== END REFLECTION ===
-
-IMPORTANT: Output ONLY your final in-character response in Korean. Do NOT output the reflection analysis again."""
+            combined_prompt = self._build_response_prompt(reflection, spt_result)
 
             lc_messages = [SystemMessage(content=combined_prompt)]
             for msg in messages:
