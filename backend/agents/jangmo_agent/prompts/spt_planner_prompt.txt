@@ -29,13 +29,13 @@ Answer 5: [Strategic question in Korean that guides toward deontological reasoni
 
 **Output Format (JSON):**
 ```json
-{
+{{
   "stakeholders": ["stakeholder1", "stakeholder2"],
   "empathy_analysis": "Analysis of stakeholder emotions/thoughts",
   "stance_alignment": "How my stance aligns/conflicts",
   "blind_spot": "What user is overlooking",
   "strategic_question": "한국어로 된 전략적 질문"
-}
+}}
 ```
 
 IMPORTANT: Output ONLY the JSON. Nothing else.

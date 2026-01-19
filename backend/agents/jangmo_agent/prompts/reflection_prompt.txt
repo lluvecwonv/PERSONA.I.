@@ -23,11 +23,11 @@ If fewer than two conditions are met, answer **NO**.
 
 **Output Format (JSON):**
 ```json
-{
+{{
   "spt_required": true or false,
   "context_analysis": "Brief analysis of user's message and conversation context",
   "user_utterance_type": "Agree/Disagree/Question/Short/Uncertain"
-}
+}}
 ```
 
 IMPORTANT: Output ONLY the JSON. Nothing else.
