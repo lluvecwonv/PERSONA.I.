@@ -1,9 +1,9 @@
 """
 Colleague1 Agent (동료 화가 - 의무론적 관점, AI 예술 반대)
 LangChain 기반 대화 에이전트
-✨ 간소화된 SPT 통합 (Reflection 제거)
+✨ SPT Reflection Framework 통합 (별도 SPT Agent 없음)
 """
-from typing import List, Dict, Any, Optional, TYPE_CHECKING
+from typing import List, Dict, Any, Optional
 from pathlib import Path
 import logging
 import sys
@@ -14,13 +14,21 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_community.chat_message_histories import ChatMessageHistory
 
-if TYPE_CHECKING:
-    from agents.spt_agent.spt_agent_v2 import SPTAgentV2
-
 sys.path.append(str(Path(__file__).parent.parent))
 from .utils import clean_gpt_response
 
 logger = logging.getLogger(__name__)
+
+
+def _load_spt_reflection_framework() -> str:
+    """Load SPT reflection framework from file"""
+    framework_path = Path(__file__).parent.parent / "spt_agent" / "prompts" / "spt_reflection_framework.txt"
+    try:
+        with open(framework_path, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except Exception as e:
+        logger.error(f"Failed to load SPT reflection framework: {e}")
+        return ""
 
 
 class Colleague1Agent:
@@ -28,7 +36,7 @@ class Colleague1Agent:
     동료 화가 대화 에이전트 (AI 예술 반대 - 의무론적 관점)
     - LangChain ChatOpenAI 사용
     - 50대 여성 선배 화가 캐릭터
-    - ✨ 간소화된 SPT 통합 (항상 SPT 호출)
+    - ✨ SPT Reflection Framework 직접 통합 (별도 SPT Agent 없음)
     - 후배에게 반말 사용
     """
 
@@ -36,28 +44,33 @@ class Colleague1Agent:
         self,
         api_key: str,
         model: str = "gpt-4o",
-        spt_agent_v2: Optional['SPTAgentV2'] = None
+        spt_agent_v2: Optional[Any] = None  # 하위 호환성 유지, 사용하지 않음
     ):
         """
         Args:
             api_key: OpenAI API key
-            model: 모델 ID (fine-tuned moral agent model)
-            spt_agent_v2: SPT Agent V2 인스턴스 (선택적)
+            model: 모델 ID
+            spt_agent_v2: (deprecated) 하위 호환성을 위해 유지, 사용되지 않음
         """
         self.api_key = api_key
         self.model = model
-        self.spt_agent_v2 = spt_agent_v2
 
         self.session_store: Dict[str, ChatMessageHistory] = {}
 
+        # 페르소나 프롬프트 로드
         prompt_path = Path(__file__).parent / "prompts" / "ai_artist_deontological.txt"
         try:
             with open(prompt_path, "r", encoding="utf-8") as f:
-                self.system_prompt = f.read().strip()
-                logger.info("✅ Colleague1 system prompt loaded successfully")
+                self.persona_prompt = f.read().strip()
+                logger.info("✅ Colleague1 persona prompt loaded successfully")
         except Exception as e:
-            logger.error(f"Failed to load Colleague1 system prompt: {e}")
-            self.system_prompt = "당신은 AI 예술에 반대하는 50대 여성 화가입니다. 의무와 책임을 근거로 반대 의견을 말합니다."
+            logger.error(f"Failed to load Colleague1 persona prompt: {e}")
+            self.persona_prompt = "당신은 AI 예술에 반대하는 50대 여성 화가입니다. 의무와 책임을 근거로 반대 의견을 말합니다."
+
+        # SPT Reflection Framework 로드
+        self.spt_framework = _load_spt_reflection_framework()
+        if self.spt_framework:
+            logger.info("✅ SPT Reflection Framework loaded successfully")
 
     def get_session_history(self, session_id: str) -> BaseChatMessageHistory:
         """세션별 히스토리 가져오기 (없으면 생성)"""
@@ -74,26 +87,19 @@ class Colleague1Agent:
             return True
         return False
 
-    def _build_messages_with_spt(
-        self,
-        messages: List[Dict[str, str]],
-        spt_instruction: Optional[str] = None
-    ) -> List:
+    def _build_messages(self, messages: List[Dict[str, str]]) -> List:
         """
-        SPT instruction을 포함한 프롬프트 구성
+        페르소나 + SPT Reflection Framework 결합 프롬프트 구성
         """
-        system_prompt = self.system_prompt
+        # 페르소나 + SPT Framework 결합
+        combined_prompt = f"""{self.persona_prompt}
 
-        if spt_instruction:
-            system_prompt += f"""
-
-🧠 SPT Strategy Instructions:
-{spt_instruction}
-
-Follow these instructions while maintaining your character's stance and speech style.
+=== SPT REFLECTION FRAMEWORK ===
+{self.spt_framework}
+=== END FRAMEWORK ===
 """
 
-        lc_messages = [SystemMessage(content=system_prompt)]
+        lc_messages = [SystemMessage(content=combined_prompt)]
 
         for msg in messages:
             role = msg.get("role")
@@ -132,30 +138,13 @@ Follow these instructions while maintaining your character's stance and speech s
         session_id: str = "default"
     ) -> str:
         """
-        비스트리밍 대화 - 간소화된 SPT 통합
-        1) 항상 SPT Agent V2 호출
-        2) SPT instruction 기반으로 응답 생성
+        비스트리밍 대화 - SPT Reflection Framework 통합
         """
         try:
             last_user_msg = self._extract_last_user_message(messages)
 
-            # 항상 SPT Agent V2 호출
-            spt_instruction = None
-            if self.spt_agent_v2:
-                try:
-                    spt_result = await self.spt_agent_v2.process(
-                        session_id=f"동료 화가_{session_id}",
-                        user_message=last_user_msg,
-                        conversation_history=messages,
-                        topic_context="AI 예술"
-                    )
-                    spt_instruction = spt_result["instruction"]
-                    logger.info(f"🧠 [Colleague1] SPT instruction: {spt_instruction}")
-                except Exception as spt_error:
-                    logger.error(f"⚠️ [Colleague1] SPT Agent V2 error (continuing without SPT): {spt_error}")
-
             llm = self._create_llm(max_tokens, streaming=False, temperature=temperature)
-            lc_messages = self._build_messages_with_spt(messages, spt_instruction)
+            lc_messages = self._build_messages(messages)
             result = await llm.ainvoke(lc_messages)
 
             raw_content = result.content.strip()
@@ -181,28 +170,13 @@ Follow these instructions while maintaining your character's stance and speech s
         session_id: str = "default"
     ):
         """
-        스트리밍 대화 - 간소화된 SPT 통합 (streaming)
+        스트리밍 대화 - SPT Reflection Framework 통합
         """
         try:
             last_user_msg = self._extract_last_user_message(messages)
 
-            # 항상 SPT Agent V2 호출
-            spt_instruction = None
-            if self.spt_agent_v2:
-                try:
-                    spt_result = await self.spt_agent_v2.process(
-                        session_id=f"동료 화가_{session_id}",
-                        user_message=last_user_msg,
-                        conversation_history=messages,
-                        topic_context="AI 예술"
-                    )
-                    spt_instruction = spt_result["instruction"]
-                    logger.info(f"🧠 [Colleague1] SPT instruction: {spt_instruction}")
-                except Exception as spt_error:
-                    logger.error(f"⚠️ [Colleague1] SPT Agent V2 error (continuing without SPT): {spt_error}")
-
             llm = self._create_llm(max_tokens, streaming=True, temperature=temperature)
-            lc_messages = self._build_messages_with_spt(messages, spt_instruction)
+            lc_messages = self._build_messages(messages)
 
             full_response = ""
             async for chunk in llm.astream(lc_messages):

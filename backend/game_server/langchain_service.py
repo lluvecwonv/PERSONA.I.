@@ -29,7 +29,7 @@ except ImportError:
     from exceptions import APIKeyNotFoundError, ChainExecutionError
 from agents.artist_apprentice_agent.conversation_agent import ConversationAgent as ArtistApprenticeAgent
 from agents.friend_agent.conversation_agent import ConversationAgent as FriendAgent
-from agents.spt_agent import SPTAgent, SPTAgentV2
+from agents.spt_agent import SPTAgent
 from agents.colleague1_agent import Colleague1Agent
 from agents.colleague2_agent import Colleague2Agent
 
@@ -95,11 +95,11 @@ class LangChainService:
         self.artist_apprentice_agent = ArtistApprenticeAgent(api_key=api_key, model="gpt-4o")
         self.friend_agent = FriendAgent(api_key=api_key, model="gpt-4o")
         self.spt_agent = SPTAgent(api_key=api_key)
-        self.spt_agent_v2 = SPTAgentV2(api_key=api_key)
-        self.colleague1_agent = Colleague1Agent(api_key=api_key, model="gpt-4o", spt_agent_v2=self.spt_agent_v2)
-        self.colleague2_agent = Colleague2Agent(api_key=api_key, model="gpt-4o", spt_agent_v2=self.spt_agent_v2)
-        self.jangmo_agent = JangmoAgent(api_key=api_key, model="gpt-4o", spt_agent_v2=self.spt_agent_v2) if HAS_JANGMO else None
-        self.son_agent = SonAgent(api_key=api_key, model="gpt-4o", spt_agent_v2=self.spt_agent_v2) if HAS_SON else None
+        # SPT V2 제거 - 각 페르소나 에이전트가 SPT Reflection Framework를 직접 사용
+        self.colleague1_agent = Colleague1Agent(api_key=api_key, model="gpt-4o")
+        self.colleague2_agent = Colleague2Agent(api_key=api_key, model="gpt-4o")
+        self.jangmo_agent = JangmoAgent(api_key=api_key, model="gpt-4o") if HAS_JANGMO else None
+        self.son_agent = SonAgent(api_key=api_key, model="gpt-4o") if HAS_SON else None
 
         self.agent = self.artist_apprentice_agent
         self.openai_client = AsyncOpenAI(api_key=api_key)

@@ -1,11 +1,4 @@
-Topic: {topic_context}
-
-Recent conversation:
-{history_text}
-
-User's last statement: "{user_message}"
-
-Before generating instructions, analyze the dialogue context and perform Social Perspective Taking (SPT) if necessary.
+Before responding, analyze the dialogue context and perform Social Perspective Taking (SPT) if necessary.
 
 **Step 1: Analyze Dialogue Context**
 
@@ -44,8 +37,4 @@ Answer 5: [Design a strategic question]
     - Uncertain → Provide a concrete example + ask a question
 - Use of SPT result: [If YES, use the strategic question from Question 5]
 
-**Output format:**
-Generate concise instructions (2-3 sentences) for the Persona Agent that include:
-1. How to respond to the user's statement/question
-2. Which SPT strategy to apply (if applicable)
-3. ONE specific follow-up question (different from previous turns)
+IMPORTANT: This reflection must happen internally. Do NOT output this analysis. Only output your final response in character.
