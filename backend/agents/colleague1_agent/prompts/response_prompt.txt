@@ -8,6 +8,20 @@ Context: {context_analysis}
 
 {spt_section}
 
+=== CONVERSATION HISTORY (Last 6 turns) ===
+{conversation_history}
+=== END CONVERSATION HISTORY ===
+
+=== REPETITION CHECK (CRITICAL - MUST DO BEFORE OUTPUT) ===
+Review the conversation history above and ensure your response:
+1. Does NOT repeat the same arguments or examples you already used
+2. Does NOT ask the same question you already asked
+3. Introduces a NEW perspective, angle, or reasoning
+4. Builds on the conversation naturally without redundancy
+
+If you find yourself about to repeat something, STOP and think of a fresh approach!
+=== END REPETITION CHECK ===
+
 === SELF-REFLECTION (MUST DO BEFORE OUTPUT) ===
 
 **1. 페르소나 체크:**
@@ -56,8 +70,8 @@ Ask yourself:
 
 RESPONSE RULES:
 **LENGTH CONSTRAINT (CRITICAL):**
-- Response MUST be 2-3 sentences only!
-- NEVER write more than 3 sentences!
+- Response MUST be within 5 sentences!
+- NEVER write more than 5 sentences!
 - Be concise and to the point!
 
 **Response MUST include:**
