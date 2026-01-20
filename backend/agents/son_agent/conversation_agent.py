@@ -114,14 +114,14 @@ class SonAgent:
         if self.response_prompt:
             logger.info("✅ Response prompt loaded successfully")
 
-        # ✨ Phase 2 응답용 GPT-5-mini LLM 설정
+        # ✨ Phase 2 응답용 GPT-4o LLM 설정
         self.response_llm = ChatOpenAI(
-            model="gpt-5-mini",
+            model="gpt-4o",
             api_key=self.api_key,
-            temperature=1.0,
-            max_completion_tokens=300
+            temperature=0.7,
+            max_tokens=300
         )
-        logger.info("✅ [Son] Using Gemini 2.5 Flash for Phase 1 & 1.5, GPT-5-mini for Phase 2")
+        logger.info("✅ [Son] Using Gemini 2.5 Flash for Phase 1 & 1.5, GPT-4o for Phase 2")
 
     def get_session_history(self, session_id: str) -> BaseChatMessageHistory:
         """세션별 히스토리 가져오기 (없으면 생성)"""
@@ -365,7 +365,7 @@ CRITICAL: You MUST include the strategic question in your response to guide the 
             # Gemini 사용 가능하면 Gemini, 아니면 OpenAI
             if self.response_llm:
                 llm = self.response_llm
-                logger.info(f"🎭 [PHASE2] Using Gemini for response")
+                logger.info(f"🎭 [PHASE2] Using GPT-4o for response")
             else:
                 llm = self._create_llm(max_tokens, streaming=False, temperature=temperature)
                 logger.info(f"🎭 [PHASE2] Using OpenAI for response")
