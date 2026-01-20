@@ -120,7 +120,7 @@ class JangmoAgent:
             temperature=1.0,
             max_completion_tokens=300
         )
-        logger.info("✅ [Jangmo] Using GPT-5-mini for Phase 2 response")
+        logger.info("✅ [Jangmo] Using Gemini 2.5 Flash for Phase 1 & 1.5, GPT-5-mini for Phase 2")
 
     def get_session_history(self, session_id: str) -> BaseChatMessageHistory:
         """세션별 히스토리 가져오기 (없으면 생성)"""
@@ -186,11 +186,11 @@ class JangmoAgent:
         )
 
         try:
-            reflection_llm = ChatOpenAI(
-                model="gpt-4o",
-                api_key=self.api_key,
+            # ✨ Phase 1: Gemini 2.5 Flash 사용
+            reflection_llm = ChatGoogleGenerativeAI(
+                model="gemini-2.5-flash",
                 temperature=0.3,
-                max_tokens=300
+                max_output_tokens=300
             )
 
             result = await reflection_llm.ainvoke([
@@ -244,11 +244,11 @@ class JangmoAgent:
         )
 
         try:
-            spt_llm = ChatOpenAI(
-                model="gpt-4o",
-                api_key=self.api_key,
+            # ✨ Phase 1.5: Gemini 2.5 Flash 사용
+            spt_llm = ChatGoogleGenerativeAI(
+                model="gemini-2.5-flash",
                 temperature=0.3,
-                max_tokens=500
+                max_output_tokens=500
             )
 
             result = await spt_llm.ainvoke([
