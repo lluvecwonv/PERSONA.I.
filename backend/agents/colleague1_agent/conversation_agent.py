@@ -250,16 +250,16 @@ class Colleague1Agent:
         )
 
         try:
-            # ✨ Phase 1.5: GPT-4o 사용
-            spt_llm = ChatOpenAI(
-                model="gpt-4o",
-                api_key=self.api_key,
+            # ✨ Phase 1.5: Gemini 사용
+            spt_llm = ChatGoogleGenerativeAI(
+                model="gemini-2.5-flash",
+                google_api_key=self.google_api_key,
                 temperature=0.3,
-                max_tokens=300
+                max_output_tokens=500
             )
 
             result = await spt_llm.ainvoke([
-                SystemMessage(content=spt_prompt)
+                HumanMessage(content=spt_prompt)
             ])
 
             spt_text = result.content.strip()
