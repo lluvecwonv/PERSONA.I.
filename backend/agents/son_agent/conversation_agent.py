@@ -115,13 +115,17 @@ class SonAgent:
             logger.info("✅ Response prompt loaded successfully")
 
         # ✨ Phase 2 응답용 Gemini 2.5 Flash LLM 설정
-        self.response_llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash",
-            google_api_key=self.google_api_key,
-            temperature=0.7,
-            max_output_tokens=500
-        )
-        logger.info("✅ [Son] Using Gemini for Phase 1 & 2, GPT-4o for SPT Planner")
+        if self.google_api_key:
+            self.response_llm = ChatGoogleGenerativeAI(
+                model="gemini-2.5-flash",
+                google_api_key=self.google_api_key,
+                temperature=0.7,
+                max_output_tokens=500
+            )
+            logger.info("✅ [Son] Using Gemini for Phase 1 & 2, GPT-4o for SPT Planner")
+        else:
+            self.response_llm = None
+            logger.warning("⚠️ [Son] GOOGLE_API_KEY not found, will use OpenAI fallback")
 
     def get_session_history(self, session_id: str) -> BaseChatMessageHistory:
         """세션별 히스토리 가져오기 (없으면 생성)"""
