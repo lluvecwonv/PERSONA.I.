@@ -114,14 +114,14 @@ class JangmoAgent:
         if self.response_prompt:
             logger.info("✅ Response prompt loaded successfully")
 
-        # ✨ Phase 2 응답용 GPT-4o LLM 설정
-        self.response_llm = ChatOpenAI(
-            model="gpt-4o",
-            api_key=self.api_key,
+        # ✨ Phase 2 응답용 Gemini 2.5 Flash LLM 설정
+        self.response_llm = ChatGoogleGenerativeAI(
+            model="gemini-2.5-flash",
+            google_api_key=self.google_api_key,
             temperature=0.7,
-            max_tokens=300
+            max_output_tokens=500
         )
-        logger.info("✅ [Jangmo] Using Gemini 2.5 Flash for Phase 1 & 1.5, GPT-4o for Phase 2")
+        logger.info("✅ [Jangmo] Using Gemini for Phase 1 & 2, GPT-4o for SPT Planner")
 
     def get_session_history(self, session_id: str) -> BaseChatMessageHistory:
         """세션별 히스토리 가져오기 (없으면 생성)"""
@@ -246,16 +246,16 @@ class JangmoAgent:
         )
 
         try:
-            # ✨ Phase 1.5: Gemini 2.5 Flash 사용
-            spt_llm = ChatGoogleGenerativeAI(
-                model="gemini-2.5-flash",
-                google_api_key=self.google_api_key,
+            # ✨ Phase 1.5: GPT-4o 사용
+            spt_llm = ChatOpenAI(
+                model="gpt-4o",
+                api_key=self.api_key,
                 temperature=0.3,
-                max_output_tokens=1000
+                max_tokens=300
             )
 
             result = await spt_llm.ainvoke([
-                HumanMessage(content=spt_prompt)
+                SystemMessage(content=spt_prompt)
             ])
 
             spt_text = result.content.strip()
@@ -365,7 +365,7 @@ CRITICAL: You MUST include the strategic question in your response to guide the 
             # Gemini 사용 가능하면 Gemini, 아니면 OpenAI
             if self.response_llm:
                 llm = self.response_llm
-                logger.info(f"🎭 [PHASE2] Using GPT-4o for response")
+                logger.info(f"🎭 [PHASE2] Using Gemini for response")
             else:
                 llm = self._create_llm(max_tokens, streaming=False, temperature=temperature)
                 logger.info(f"🎭 [PHASE2] Using OpenAI for response")
