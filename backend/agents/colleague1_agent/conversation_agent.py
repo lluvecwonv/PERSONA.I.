@@ -85,6 +85,7 @@ class Colleague1Agent:
         """
         self.api_key = api_key
         self.model = model
+        self.google_api_key = os.getenv("GOOGLE_API_KEY", "")
 
         self.session_store: Dict[str, ChatMessageHistory] = {}
 
@@ -189,6 +190,7 @@ class Colleague1Agent:
             # ✨ Phase 1: Gemini 2.5 Flash 사용
             reflection_llm = ChatGoogleGenerativeAI(
                 model="gemini-2.5-flash",
+                google_api_key=self.google_api_key,
                 temperature=0.3,
                 max_output_tokens=300
             )
@@ -247,6 +249,7 @@ class Colleague1Agent:
             # ✨ Phase 1.5: Gemini 2.5 Flash 사용
             spt_llm = ChatGoogleGenerativeAI(
                 model="gemini-2.5-flash",
+                google_api_key=self.google_api_key,
                 temperature=0.3,
                 max_output_tokens=500
             )
