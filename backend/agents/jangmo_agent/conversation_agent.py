@@ -113,18 +113,14 @@ class JangmoAgent:
         if self.response_prompt:
             logger.info("✅ Response prompt loaded successfully")
 
-        # ✨ Phase 2 응답용 Gemini LLM 설정
-        self.gemini_api_key = os.getenv("GEMINI_API_KEY", "")
-        self.response_llm = None
-        if HAS_GEMINI and self.gemini_api_key:
-            self.response_llm = ChatGoogleGenerativeAI(
-                model="gemini-2.5-flash",
-                temperature=0.7,
-                google_api_key=self.gemini_api_key
-            )
-            logger.info("✅ [Jangmo] Using Gemini for Phase 2 response")
-        else:
-            logger.info("⚠️ [Jangmo] Gemini not available, using OpenAI for Phase 2")
+        # ✨ Phase 2 응답용 GPT-5-mini LLM 설정
+        self.response_llm = ChatOpenAI(
+            model="gpt-5-mini",
+            api_key=self.api_key,
+            temperature=1.0,
+            max_completion_tokens=300
+        )
+        logger.info("✅ [Jangmo] Using GPT-5-mini for Phase 2 response")
 
     def get_session_history(self, session_id: str) -> BaseChatMessageHistory:
         """세션별 히스토리 가져오기 (없으면 생성)"""
