@@ -120,7 +120,7 @@ class Colleague1Agent:
                 model="gemini-2.5-flash",
                 google_api_key=self.google_api_key,
                 temperature=0.7,
-                max_output_tokens=500
+                max_output_tokens=2000
             )
             logger.info("✅ [Colleague1] Using Gemini for Phase 1 & 2, GPT-4o for SPT Planner")
         else:
@@ -196,7 +196,7 @@ class Colleague1Agent:
                 model="gemini-2.5-flash",
                 google_api_key=self.google_api_key,
                 temperature=0.3,
-                max_output_tokens=1000
+                max_output_tokens=2000
             )
 
             result = await reflection_llm.ainvoke([
