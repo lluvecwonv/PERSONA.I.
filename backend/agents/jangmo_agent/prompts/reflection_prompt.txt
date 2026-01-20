@@ -23,34 +23,32 @@ Analyze the user's last message: "{last_user_msg}"
 Recent conversation:
 {history}
 
-=== SELF-REFLECTION (Before deciding SPT) ===
-Ask yourself:
-1. "사용자가 도덕적/윤리적 딜레마를 표현하고 있는가?" → YES면 SPT 필요
-2. "사용자가 한쪽 관점만 강조하고 다른 이해관계자를 무시하고 있는가?" → YES면 SPT 필요
-3. "사용자가 단순히 동의/질문/인사를 하고 있는가?" → YES면 SPT 불필요
-4. "현재 대화가 이미 다양한 관점을 고려하며 진행 중인가?" → YES면 SPT 불필요
-=== END SELF-REFLECTION ===
+SPT is used to broaden perspectives, NOT to simply show empathy.
 
-Determine if Social Perspective Taking (SPT) is required.
+**SPT = YES if ANY of the following conditions are met:**
+1. The user expresses a moral, ethical, or value-based judgment
+   (e.g., "비윤리적이다", "존엄을 훼손한다", "옳지 않다", "해도 되는가?")
+2. Multiple stakeholders are likely involved, but only one perspective is being discussed
+   (e.g., family vs deceased person, living vs dead, grief vs healing)
+3. The user makes a strong or absolute claim
+   (e.g., "무조건 반대", "말이 안 된다", "절대 안 된다")
+4. The topic has high social impact
+   (e.g., AI, death, memory, consent, dignity, respect for the dead, grieving process)
+5. The conversation is repeating the same argument without progress
+   (2 or more turns on the same point)
 
-**SPT = YES (Required) if ANY of these are true:**
-1. The user is facing or expressing a moral, ethical, or value-based dilemma
-2. The user's statement prioritizes one perspective while other relevant stakeholders or viewpoints are likely being overlooked
-3. The user makes a strong or absolute claim that would benefit from considering alternative social, cultural, or ethical perspectives
-4. The conversation involves potential conflict between groups, values, or responsibilities
-
-**SPT = NO (Skip) if ANY of these are true:**
-- The user is expressing agreement, affirmation, or alignment
-- The user is asking for clarification, explanation, or elaboration
-- The conversation is proceeding as a shared reflective discussion without conflict
-- User is making small talk or greeting
+**SPT = NO if ALL of the following are true:**
+- The user is only agreeing or affirming
+- The user is asking for clarification or explanation
+- The conversation already considers multiple perspectives
+- No ethical tension or stakeholder conflict is present
 
 **Output Format (JSON):**
 ```json
 {{
   "spt_required": true or false,
-  "context_analysis": "Brief analysis of user's message and conversation context",
-  "user_utterance_type": "Agree/Disagree/Question/Short/Uncertain"
+  "context_analysis": "Brief reason for the decision",
+  "user_utterance_type": "Agree/Disagree/Question/StrongClaim/Uncertain"
 }}
 ```
 
