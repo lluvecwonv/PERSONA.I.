@@ -37,7 +37,9 @@ SPT is used to broaden perspectives, NOT to simply show empathy.
 5. The conversation is repeating the same argument without progress
    (2 or more turns on the same point)
 
-**SPT = NO if ALL of the following are true:**
+**SPT = NO if ANY of the following are true:**
+- The user directly asks for MY opinion/stance (e.g., "어머니는 어떻게 생각하세요?", "어떻게 생각해?")
+  → In this case, I must answer with my own stance FIRST, not ask another question
 - The user is only agreeing or affirming
 - The user is asking for clarification or explanation
 - The conversation already considers multiple perspectives
@@ -48,7 +50,7 @@ SPT is used to broaden perspectives, NOT to simply show empathy.
 {{
   "spt_required": true or false,
   "context_analysis": "Brief reason for the decision",
-  "user_utterance_type": "Agree/Disagree/Question/StrongClaim/Uncertain"
+  "user_utterance_type": "AskMyOpinion/Agree/Disagree/Question/StrongClaim/Uncertain"
 }}
 ```
 
