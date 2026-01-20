@@ -363,16 +363,12 @@ CRITICAL: You MUST include the strategic question in your response to guide the 
             if reflection.get("spt_required", False):
                 spt_result = await self._perform_spt_planning(messages, last_user_msg, session_id)
 
-            # Phase 2: Response Generation (Gemini 우선)
+            # Phase 2: Response Generation (GPT-4o 사용)
             logger.info(f"🎭 [PHASE2_START] session_id={session_id}, Generating response...")
 
-            # Gemini 사용 가능하면 Gemini, 아니면 OpenAI
-            if self.response_llm:
-                llm = self.response_llm
-                logger.info(f"🎭 [PHASE2] Using Gemini for response")
-            else:
-                llm = self._create_llm(max_tokens, streaming=False, temperature=temperature)
-                logger.info(f"🎭 [PHASE2] Using OpenAI for response")
+            # 항상 GPT-4o 사용 (더 나은 한국어 응답 품질)
+            llm = self._create_llm(max_tokens=500, streaming=False, temperature=temperature)
+            logger.info(f"🎭 [PHASE2] Using GPT-4o for response")
 
             combined_prompt = self._build_response_prompt(reflection, spt_result)
 
