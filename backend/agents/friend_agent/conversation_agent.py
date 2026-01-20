@@ -79,7 +79,7 @@ class ConversationAgent:
         logger.info("✅ Created PersonaLLM with embedded persona")
 
         # ✨ 의도 분석용 LLM - Gemini 우선 (빠르고 저렴)
-        gemini_api_key = os.getenv("GEMINI_API_KEY", "")
+        gemini_api_key = os.getenv("GOOGLE_API_KEY", "")
         if HAS_GEMINI and gemini_api_key:
             self.analyzer = ChatGoogleGenerativeAI(
                 model="gemini-2.0-flash",

@@ -128,7 +128,7 @@ class SPTAgent:
         self.session_store: Dict[str, ChatMessageHistory] = {}
 
         # ✨ 응답 타입 분류용 LLM (Gemini 우선, 없으면 GPT)
-        gemini_api_key = os.getenv("GEMINI_API_KEY", "")
+        gemini_api_key = os.getenv("GOOGLE_API_KEY", "")
         if HAS_GEMINI and gemini_api_key:
             self.classifier_llm = ChatGoogleGenerativeAI(
                 model="gemini-2.0-flash",

@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
 
     # Gemini API 키
-    gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
+    gemini_api_key: str = os.getenv("GOOGLE_API_KEY", "")
 
     # 데이터베이스 설정 (PostgreSQL - READ ONLY)
     # 주의: asyncpg는 ?schema=public 지원 안 함 (Prisma 전용 파라미터)
