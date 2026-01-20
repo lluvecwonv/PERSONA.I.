@@ -55,6 +55,11 @@ Ask yourself:
 === END SELF POSITION CHECK ===
 
 RESPONSE RULES:
+**LENGTH CONSTRAINT (CRITICAL):**
+- Response MUST be 2-3 sentences only!
+- NEVER write more than 3 sentences!
+- Be concise and to the point!
+
 **Response MUST include:**
 - One sentence clearly stating your own opinion (e.g., "나는 이건 예술이 아니라고 봐")
 - One sentence acknowledging the other perspective (e.g., "네 생각도 이해하지만")
