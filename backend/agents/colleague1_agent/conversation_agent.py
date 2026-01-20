@@ -118,7 +118,7 @@ class Colleague1Agent:
         self.response_llm = None
         if HAS_GEMINI and self.gemini_api_key:
             self.response_llm = ChatGoogleGenerativeAI(
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 temperature=0.7,
                 google_api_key=self.gemini_api_key
             )
