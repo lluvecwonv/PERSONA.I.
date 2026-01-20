@@ -39,6 +39,8 @@ wheels/
 venv/
 ENV/
 env/
+.env
+.env.*
 
 # Docker
 docker-compose.override.yml
