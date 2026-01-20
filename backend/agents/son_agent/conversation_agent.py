@@ -196,7 +196,7 @@ class SonAgent:
             )
 
             result = await reflection_llm.ainvoke([
-                SystemMessage(content=reflection_prompt)
+                HumanMessage(content=reflection_prompt)
             ])
 
             reflection_text = result.content.strip()
@@ -255,7 +255,7 @@ class SonAgent:
             )
 
             result = await spt_llm.ainvoke([
-                SystemMessage(content=spt_prompt)
+                HumanMessage(content=spt_prompt)
             ])
 
             spt_text = result.content.strip()
