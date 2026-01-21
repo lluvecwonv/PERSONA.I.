@@ -245,7 +245,7 @@ class Colleague2Agent:
                 model="gemini-2.5-flash",
                 google_api_key=self.google_api_key,
                 temperature=0.3,
-                max_output_tokens=500
+                max_output_tokens=1000
             )
 
             result = await spt_llm.ainvoke([
