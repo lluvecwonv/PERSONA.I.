@@ -22,7 +22,7 @@ Context: {context_analysis}
 
 {spt_section}
 
-=== CONVERSATION HISTORY (Last 6 turns) ===
+=== CONVERSATION HISTORY (All 7 turns) ===
 {conversation_history}
 === END CONVERSATION HISTORY ===
 

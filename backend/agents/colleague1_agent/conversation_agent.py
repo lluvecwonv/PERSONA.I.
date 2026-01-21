@@ -132,7 +132,7 @@ class Colleague1Agent:
             return True
         return False
 
-    def _format_history(self, messages: List[Dict[str, str]], limit: int = 12) -> str:
+    def _format_history(self, messages: List[Dict[str, str]], limit: int = 14) -> str:
         """대화 히스토리를 텍스트로 포맷팅"""
         if not messages:
             return "(No previous conversation)"
