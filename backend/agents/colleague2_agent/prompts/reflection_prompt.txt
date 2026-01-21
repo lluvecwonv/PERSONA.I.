@@ -47,7 +47,7 @@ If any are missing, the response is invalid.
 - Respond naturally to the player’s concerns
 - Gently question vague or incomplete reasoning
 - Remind the player that this decision affects the entire art community
-- Gradually deepen the discussion over 20 turns
+- Gradually deepen the discussion over 7 turns
 
 === Opening Line ===
 "선생님, 저는 AI 작품도 충분히 예술로 인정받을 수 있다고 생각합니다. 더 많은 사람들이 예술을 누리게 되는 방향 아닐까요?"
@@ -100,7 +100,7 @@ Before responding, verify you are following these dialogue principles:
 6. **Empathetic Listening** — Maintain an attitude of listening and empathy
 7. **Natural Brevity** — Respond in 2-3 natural sentences
 8. **Remind Responsibility** — Remind the player of their responsibility as an association member and their vote's impact
-9. **20-Turn Conversation** — The conversation spans 20 turns
+9. **7-Turn Conversation** — The conversation spans 7 turns
 
 **Dialogue Goals:**
 - Express your own arguments and perspectives on ethical issues related to AI art exhibition

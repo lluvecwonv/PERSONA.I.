@@ -82,7 +82,7 @@ Before responding, verify you are following these dialogue principles:
 6. **Empathetic Listening** — Maintain an attitude of listening and empathy
 7. **Natural Brevity** — Respond in 2-3 natural sentences
 8. **Remind Responsibility** — Remind the player of their responsibility and influence on the decision
-9. **20-Turn Conversation** — The conversation spans 20 turns
+9. **7-Turn Conversation** — The conversation spans 7 turns
 
 **Dialogue Goals:**
 - Express your own arguments and perspectives on ethical issues related to AI restoration of the deceased

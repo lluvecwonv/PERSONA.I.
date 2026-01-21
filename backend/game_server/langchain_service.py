@@ -913,9 +913,9 @@ class LangChainService:
         session_data["turn_count"] += 1
         session_data["messages"] = self._trim_profile_history(session_data["messages"])
 
-        # ✨ 10턴이면 마무리 응답 반환 (대화 종료)
-        if session_data["turn_count"] >= 10 and agent_key not in ["friend", "artist_apprentice"]:
-            logger.info(f"🔚 [PROFILE_CHAT] Turn 10 reached - returning final message for {agent_key}")
+        # ✨ 7턴이면 마무리 응답 반환 (대화 종료)
+        if session_data["turn_count"] >= 7 and agent_key not in ["friend", "artist_apprentice"]:
+            logger.info(f"🔚 [PROFILE_CHAT] Turn 7 reached - returning final message for {agent_key}")
             final_message = self._get_final_message(agent, agent_key)
             session_data["messages"].append({"role": "assistant", "content": final_message})
             result_dict = {
@@ -971,7 +971,7 @@ class LangChainService:
             if agent_key in ["friend", "artist_apprentice"]:
                 is_end = False
             else:
-                is_end = session_data["turn_count"] >= 10
+                is_end = session_data["turn_count"] >= 7
 
             result_dict = {
                 "response": response_text,
