@@ -89,16 +89,6 @@ class SonAgent:
 
         self.session_store: Dict[str, ChatMessageHistory] = {}
 
-        # 페르소나 프롬프트 로드
-        prompt_path = Path(__file__).parent / "prompts" / "son_utilitarian.txt"
-        try:
-            with open(prompt_path, "r", encoding="utf-8") as f:
-                self.persona_prompt = f.read().strip()
-                logger.info("✅ Son persona prompt loaded successfully")
-        except Exception as e:
-            logger.error(f"Failed to load Son persona prompt: {e}")
-            self.persona_prompt = "당신은 아버지에게 어머니를 AI로 복원하는 것을 찬성하는 아들입니다. 가족의 행복과 이익을 근거로 찬성 의견을 말합니다."
-
         # Reflection Prompt 로드 (Step 1, 2)
         self.reflection_prompt = _load_reflection_prompt()
         if self.reflection_prompt:
@@ -114,18 +104,14 @@ class SonAgent:
         if self.response_prompt:
             logger.info("✅ Response prompt loaded successfully")
 
-        # ✨ Phase 2 응답용 Gemini 2.5 Flash LLM 설정
-        if self.google_api_key:
-            self.response_llm = ChatGoogleGenerativeAI(
-                model="gemini-2.5-flash",
-                google_api_key=self.google_api_key,
-                temperature=0.7,
-                max_output_tokens=2000
-            )
-            logger.info("✅ [Son] Using Gemini for Phase 1 & 2, GPT-4o for SPT Planner")
-        else:
-            self.response_llm = None
-            logger.warning("⚠️ [Son] GOOGLE_API_KEY not found, will use OpenAI fallback")
+        # ✨ Phase 2 응답용 GPT-4o LLM 설정
+        self.response_llm = ChatOpenAI(
+            model="gpt-4o",
+            api_key=self.api_key,
+            temperature=0.7,
+            max_tokens=300
+        )
+        logger.info("✅ [Son] Using Gemini 2.5 Flash for Phase 1 & 1.5, GPT-4o for Phase 2")
 
     def get_session_history(self, session_id: str) -> BaseChatMessageHistory:
         """세션별 히스토리 가져오기 (없으면 생성)"""
@@ -196,7 +182,7 @@ class SonAgent:
                 model="gemini-2.5-flash",
                 google_api_key=self.google_api_key,
                 temperature=0.3,
-                max_output_tokens=2000
+                max_output_tokens=1000
             )
 
             result = await reflection_llm.ainvoke([
@@ -250,12 +236,12 @@ class SonAgent:
         )
 
         try:
-            # ✨ Phase 1.5: Gemini 사용
+            # ✨ Phase 1.5: Gemini 2.5 Flash 사용
             spt_llm = ChatGoogleGenerativeAI(
                 model="gemini-2.5-flash",
                 google_api_key=self.google_api_key,
                 temperature=0.3,
-                max_output_tokens=500
+                max_output_tokens=1000
             )
 
             result = await spt_llm.ainvoke([
@@ -326,22 +312,17 @@ CRITICAL: You MUST include the strategic question in your response to guide the 
     def _build_response_prompt(
         self,
         reflection: Dict[str, Any],
-        spt_result: Optional[Dict[str, Any]],
-        messages: List[Dict[str, str]]
+        spt_result: Optional[Dict[str, Any]]
     ) -> str:
         """Phase 2용 응답 생성 프롬프트 구성"""
 
         # SPT 섹션은 SPT Planner에서 이미 포맷팅됨
         spt_section = spt_result.get("formatted_section", "") if spt_result else ""
 
-        # 대화 히스토리 포맷팅 (최근 6턴)
-        conversation_history = self._format_history(messages, limit=6)
-
         return self.response_prompt.format(
             user_utterance_type=reflection.get('user_utterance_type', 'Question'),
             context_analysis=reflection.get('context_analysis', ''),
-            spt_section=spt_section,
-            conversation_history=conversation_history
+            spt_section=spt_section
         )
 
     async def chat(
@@ -368,14 +349,18 @@ CRITICAL: You MUST include the strategic question in your response to guide the 
             if reflection.get("spt_required", False):
                 spt_result = await self._perform_spt_planning(messages, last_user_msg, session_id)
 
-            # Phase 2: Response Generation (GPT-4o 사용)
+            # Phase 2: Response Generation (Gemini 우선)
             logger.info(f"🎭 [PHASE2_START] session_id={session_id}, Generating response...")
 
-            # 항상 GPT-4o 사용 (더 나은 한국어 응답 품질)
-            llm = self._create_llm(max_tokens=500, streaming=False, temperature=temperature)
-            logger.info(f"🎭 [PHASE2] Using GPT-4o for response")
+            # Gemini 사용 가능하면 Gemini, 아니면 OpenAI
+            if self.response_llm:
+                llm = self.response_llm
+                logger.info(f"🎭 [PHASE2] Using GPT-4o for response")
+            else:
+                llm = self._create_llm(max_tokens, streaming=False, temperature=temperature)
+                logger.info(f"🎭 [PHASE2] Using OpenAI for response")
 
-            combined_prompt = self._build_response_prompt(reflection, spt_result, messages)
+            combined_prompt = self._build_response_prompt(reflection, spt_result)
 
             lc_messages = [SystemMessage(content=combined_prompt)]
             for msg in messages:
@@ -436,7 +421,7 @@ CRITICAL: You MUST include the strategic question in your response to guide the 
 
             llm = self._create_llm(max_tokens, streaming=True, temperature=temperature)
 
-            combined_prompt = self._build_response_prompt(reflection, spt_result, messages)
+            combined_prompt = self._build_response_prompt(reflection, spt_result)
 
             lc_messages = [SystemMessage(content=combined_prompt)]
             for msg in messages:

@@ -89,16 +89,6 @@ class JangmoAgent:
 
         self.session_store: Dict[str, ChatMessageHistory] = {}
 
-        # 페르소나 프롬프트 로드
-        prompt_path = Path(__file__).parent / "prompts" / "jangmo_deontological.txt"
-        try:
-            with open(prompt_path, "r", encoding="utf-8") as f:
-                self.persona_prompt = f.read().strip()
-                logger.info("✅ Jangmo persona prompt loaded successfully")
-        except Exception as e:
-            logger.error(f"Failed to load Jangmo persona prompt: {e}")
-            self.persona_prompt = "당신은 사위에게 아내(당신의 딸)를 AI로 복원하는 것을 반대하는 장모입니다. 사위와 대화할 때는 '네 아내'라고 표현합니다. 책임과 예의, 약속을 근거로 반대 의견을 말합니다."
-
         # Reflection Prompt 로드 (Step 1, 2)
         self.reflection_prompt = _load_reflection_prompt()
         if self.reflection_prompt:

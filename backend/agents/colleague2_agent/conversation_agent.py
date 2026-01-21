@@ -89,16 +89,6 @@ class Colleague2Agent:
 
         self.session_store: Dict[str, ChatMessageHistory] = {}
 
-        # 페르소나 프롬프트 로드
-        prompt_path = Path(__file__).parent / "prompts" / "ai_artist_utilitarian.txt"
-        try:
-            with open(prompt_path, "r", encoding="utf-8") as f:
-                self.persona_prompt = f.read().strip()
-                logger.info("✅ Colleague2 persona prompt loaded successfully")
-        except Exception as e:
-            logger.error(f"Failed to load Colleague2 persona prompt: {e}")
-            self.persona_prompt = "당신은 AI 예술에 찬성하는 30대 남성 화가입니다. 사회적 이익과 혜택을 근거로 찬성 의견을 말합니다."
-
         # Reflection Prompt 로드 (Step 1, 2)
         self.reflection_prompt = _load_reflection_prompt()
         if self.reflection_prompt:

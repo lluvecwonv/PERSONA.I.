@@ -89,16 +89,6 @@ class Colleague1Agent:
 
         self.session_store: Dict[str, ChatMessageHistory] = {}
 
-        # 페르소나 프롬프트 로드
-        prompt_path = Path(__file__).parent / "prompts" / "ai_artist_deontological.txt"
-        try:
-            with open(prompt_path, "r", encoding="utf-8") as f:
-                self.persona_prompt = f.read().strip()
-                logger.info("✅ Colleague1 persona prompt loaded successfully")
-        except Exception as e:
-            logger.error(f"Failed to load Colleague1 persona prompt: {e}")
-            self.persona_prompt = "당신은 AI 예술에 반대하는 50대 여성 화가입니다. 의무와 책임을 근거로 반대 의견을 말합니다."
-
         # Reflection Prompt 로드 (Step 1, 2)
         self.reflection_prompt = _load_reflection_prompt()
         if self.reflection_prompt:
