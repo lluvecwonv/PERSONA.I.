@@ -149,7 +149,7 @@ class JangmoAgent:
         return "\n".join(lines) if lines else "(No previous conversation)"
 
     def _parse_json_response(self, text: str) -> Dict[str, Any]:
-        """LLM 응답에서 JSON 파싱"""
+        """LLM 응답에서 JSON 파싱 (truncation 대응 포함)"""
         try:
             # ```json ... ``` 블록 제거
             if "```json" in text:
@@ -157,8 +157,51 @@ class JangmoAgent:
             elif "```" in text:
                 text = text.split("```")[1].split("```")[0]
             return json.loads(text.strip())
+        except json.JSONDecodeError as e:
+            logger.warning(f"JSON parsing error: {e}")
+            # Truncated JSON 복구 시도 - 부분 데이터 추출
+            result = {}
+            import re
+
+            # strategic_question 추출 시도
+            sq_match = re.search(r'"strategic_question"\s*:\s*"([^"]+)"', text)
+            if sq_match:
+                result["strategic_question"] = sq_match.group(1)
+
+            # stakeholders 추출 시도
+            st_match = re.search(r'"stakeholders"\s*:\s*\[([^\]]+)\]', text)
+            if st_match:
+                stakeholders = re.findall(r'"([^"]+)"', st_match.group(1))
+                result["stakeholders"] = stakeholders
+
+            # blind_spot 추출 시도
+            bs_match = re.search(r'"blind_spot"\s*:\s*"([^"]+)"', text)
+            if bs_match:
+                result["blind_spot"] = bs_match.group(1)
+
+            # spt_required 추출 시도
+            spt_match = re.search(r'"spt_required"\s*:\s*(true|false)', text, re.IGNORECASE)
+            if spt_match:
+                result["spt_required"] = spt_match.group(1).lower() == "true"
+
+            # context_analysis 추출 시도
+            ca_match = re.search(r'"context_analysis"\s*:\s*"([^"]+)"', text)
+            if ca_match:
+                result["context_analysis"] = ca_match.group(1)
+
+            # user_utterance_type 추출 시도
+            ut_match = re.search(r'"user_utterance_type"\s*:\s*"([^"]+)"', text)
+            if ut_match:
+                result["user_utterance_type"] = ut_match.group(1)
+
+            if result:
+                logger.info(f"Recovered partial JSON: {result}")
+            else:
+                logger.error(f"Could not recover any data from: {text[:200]}")
+
+            return result
         except Exception as e:
-            logger.error(f"JSON parsing error: {e}, text: {text[:200]}")
+            logger.error(f"Unexpected parsing error: {e}")
             return {}
 
     async def _perform_basic_reflection(
@@ -240,12 +283,12 @@ class JangmoAgent:
         )
 
         try:
-            # ✨ Phase 1.5: Gemini 사용
-            spt_llm = ChatGoogleGenerativeAI(
-                model="gemini-2.5-flash",
-                google_api_key=self.google_api_key,
+            # ✨ Phase 1.5: GPT-4o 사용 (truncation 방지)
+            spt_llm = ChatOpenAI(
+                model="gpt-4o",
+                api_key=self.api_key,
                 temperature=0.3,
-                max_output_tokens=2000
+                max_tokens=500
             )
 
             result = await spt_llm.ainvoke([

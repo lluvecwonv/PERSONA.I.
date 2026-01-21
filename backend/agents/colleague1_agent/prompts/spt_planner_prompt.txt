@@ -52,14 +52,22 @@ Question 5: What question can encourage the user to consider that perspective?
 Answer 5: [Strategic question in Korean that guides toward deontological reasoning]
 
 **Output Format (JSON):**
+
+CRITICAL LENGTH LIMITS - Each field MUST be under 20 words:
+- stakeholders: List 1-2 names only
+- empathy_analysis: One short sentence (max 20 words)
+- stance_alignment: One short sentence (max 20 words)
+- blind_spot: One short phrase (max 15 words)
+- strategic_question: One question in Korean (max 20 words)
+
 ```json
 {{
-  "stakeholders": ["stakeholder1", "stakeholder2"],
-  "empathy_analysis": "Analysis of stakeholder emotions/thoughts",
-  "stance_alignment": "How my stance aligns/conflicts",
-  "blind_spot": "What user is overlooking",
-  "strategic_question": "한국어로 된 전략적 질문"
+  "stakeholders": ["Apprentices"],
+  "empathy_analysis": "제자들은 AI로 인해 일자리를 잃을까 걱정한다",
+  "stance_alignment": "나의 입장과 일치한다",
+  "blind_spot": "제자들에 대한 책임을 간과하고 있다",
+  "strategic_question": "후배들이 AI에 의존한다면 진정한 기술을 배울 수 있을까?"
 }}
 ```
 
-IMPORTANT: Output ONLY the JSON. Nothing else.
+IMPORTANT: Output ONLY the JSON. Keep it SHORT to avoid truncation.

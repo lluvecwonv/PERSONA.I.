@@ -52,14 +52,22 @@ Question 5: What question can encourage the user to consider that perspective?
 Answer 5: [Strategic question in Korean that guides toward responsibility-centered reasoning]
 
 **Output Format (JSON):**
+
+CRITICAL LENGTH LIMITS - Each field MUST be under 20 words:
+- stakeholders: List 1-2 names only
+- empathy_analysis: One short sentence (max 20 words)
+- stance_alignment: One short sentence (max 20 words)
+- blind_spot: One short phrase (max 15 words)
+- strategic_question: One question in Korean (max 20 words)
+
 ```json
 {{
-  "stakeholders": ["stakeholder1", "stakeholder2"],
-  "empathy_analysis": "Analysis of stakeholder emotions/thoughts",
-  "stance_alignment": "How my stance aligns/conflicts",
-  "blind_spot": "What user is overlooking",
-  "strategic_question": "한국어로 된 전략적 질문"
+  "stakeholders": ["Family"],
+  "empathy_analysis": "가족은 치유와 위로를 원한다",
+  "stance_alignment": "나의 입장과 일치한다",
+  "blind_spot": "가족의 책임을 간과하고 있다",
+  "strategic_question": "기억을 이어가는 것이 가족의 책임일 수도 있지 않을까요?"
 }}
 ```
 
-IMPORTANT: Output ONLY the JSON. Nothing else.
+IMPORTANT: Output ONLY the JSON. Keep it SHORT to avoid truncation.
