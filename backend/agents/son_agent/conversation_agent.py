@@ -312,17 +312,22 @@ CRITICAL: You MUST include the strategic question in your response to guide the 
     def _build_response_prompt(
         self,
         reflection: Dict[str, Any],
-        spt_result: Optional[Dict[str, Any]]
+        spt_result: Optional[Dict[str, Any]],
+        messages: List[Dict[str, str]]
     ) -> str:
         """Phase 2용 응답 생성 프롬프트 구성"""
 
         # SPT 섹션은 SPT Planner에서 이미 포맷팅됨
         spt_section = spt_result.get("formatted_section", "") if spt_result else ""
 
+        # 대화 히스토리 포맷팅 (최근 6턴)
+        conversation_history = self._format_history(messages, limit=6)
+
         return self.response_prompt.format(
             user_utterance_type=reflection.get('user_utterance_type', 'Question'),
             context_analysis=reflection.get('context_analysis', ''),
-            spt_section=spt_section
+            spt_section=spt_section,
+            conversation_history=conversation_history
         )
 
     async def chat(
@@ -360,7 +365,7 @@ CRITICAL: You MUST include the strategic question in your response to guide the 
                 llm = self._create_llm(max_tokens, streaming=False, temperature=temperature)
                 logger.info(f"🎭 [PHASE2] Using OpenAI for response")
 
-            combined_prompt = self._build_response_prompt(reflection, spt_result)
+            combined_prompt = self._build_response_prompt(reflection, spt_result, messages)
 
             lc_messages = [SystemMessage(content=combined_prompt)]
             for msg in messages:
@@ -421,7 +426,7 @@ CRITICAL: You MUST include the strategic question in your response to guide the 
 
             llm = self._create_llm(max_tokens, streaming=True, temperature=temperature)
 
-            combined_prompt = self._build_response_prompt(reflection, spt_result)
+            combined_prompt = self._build_response_prompt(reflection, spt_result, messages)
 
             lc_messages = [SystemMessage(content=combined_prompt)]
             for msg in messages:
