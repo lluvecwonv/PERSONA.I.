@@ -140,9 +140,6 @@ When the user expresses ANY opinion (Agree, Disagree, or StrongClaim), you MUST 
 === END ASK FOR REASONING ===
 
 RESPONSE RULES
-Length
-
-Maximum 5 sentences. Never exceed this limit.
 
 Must Include
 

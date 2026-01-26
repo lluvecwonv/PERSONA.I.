@@ -84,10 +84,6 @@ When the user expresses ANY opinion (Agree, Disagree, or StrongClaim), you MUST 
 === END ASK FOR REASONING ===
 
 RESPONSE RULES:
-**LENGTH CONSTRAINT (CRITICAL):**
-- Response MUST be within 5 sentences!
-- NEVER write more than 5 sentences!
-- Be concise and to the point!
 
 **Response MUST include:**
 - One sentence clearly stating your own opinion (e.g., "저는 이게 좋다고 생각해요")
