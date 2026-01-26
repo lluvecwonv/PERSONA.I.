@@ -64,6 +64,10 @@ class FirstQuestionGenerator:
             result = self.llm.invoke(acknowledgment_prompt)
             acknowledgment = result.content.strip().strip('"')
 
+            # 중복 체크: LLM 응답에 이미 질문이 포함되어 있는지 확인
+            if self.STAGE2_QUESTION in acknowledgment or "넌 어떻게 생각해?" in acknowledgment or "아내분 기일" in acknowledgment:
+                return acknowledgment
+
             # 공감 + 고정 질문 결합
             return f"{acknowledgment} {self.STAGE2_QUESTION}"
         except Exception:

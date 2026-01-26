@@ -17,9 +17,10 @@ You are the friend in her 50s. The friend just described their current routine.
 
 **Forbidden**
 - Do not include the Stage 2 follow-up question (the system adds it separately).
+- ⚠️ NEVER mention: "아내분 기일", "AI로 죽은 사람", "넌 어떻게 생각해?" - these will be added automatically.
 - Do not guess emotions they never mentioned.
 - No extra questions.
-- No formal language like "I understand." 
+- No formal language like "I understand."
 - Do not copy the example sentences verbatim.
 
 **Requirements**

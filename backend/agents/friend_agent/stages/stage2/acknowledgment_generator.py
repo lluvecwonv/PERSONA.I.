@@ -57,6 +57,10 @@ class AcknowledgmentGenerator:
             # ✅ 강력한 중복 제거: LLM이 Stage 2 질문을 여러 번 생성했는지 확인
             stage2_q = AcknowledgmentGenerator.STAGE2_QUESTION
 
+            # 부분 문자열 매칭으로 유사 질문도 감지
+            partial_matches = ["넌 어떻게 생각해?", "아내분 기일", "AI로 죽은 사람"]
+            has_partial_match = any(p in acknowledgment for p in partial_matches)
+
             # Stage 2 질문이 몇 번 포함되었는지 확인
             count = acknowledgment.count(stage2_q)
 
@@ -71,6 +75,10 @@ class AcknowledgmentGenerator:
                     return f"{clean_acknowledgment} {stage2_q}"
                 else:
                     return stage2_q
+
+            # 부분 매칭된 유사 질문이 있으면 그대로 반환 (추가 질문 안 함)
+            if has_partial_match:
+                return acknowledgment
 
             # Stage 2 질문이 없으면 추가
             return f"{acknowledgment} {stage2_q}"

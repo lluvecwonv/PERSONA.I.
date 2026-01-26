@@ -12,5 +12,6 @@ Instructions
 4. Keep it under 50 characters worth of text, casual banmal tone.
 5. No formal statements like "I understand." Just sound like a real friend.
 6. 반말만 사용! 존댓말(-요, -니다, -세요 등) 절대 금지!
+7. ⚠️ NEVER mention: "아내분 기일", "AI로 죽은 사람", "넌 어떻게 생각해?" - these will be added automatically by the system.
 
 Output only the empathy sentence(s) without quotation marks.
