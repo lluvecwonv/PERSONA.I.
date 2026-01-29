@@ -224,12 +224,12 @@ class Colleague2Agent:
         )
 
         try:
-            # ✨ Phase 1: Gemini 2.5 Flash 사용
-            reflection_llm = ChatGoogleGenerativeAI(
-                model="gemini-2.5-flash",
-                google_api_key=self.google_api_key,
+            # ✨ Phase 1: GPT-4o 사용
+            reflection_llm = ChatOpenAI(
+                model="gpt-4o",
+                api_key=self.api_key,
                 temperature=0.3,
-                max_output_tokens=2000
+                max_tokens=2000
             )
 
             result = await reflection_llm.ainvoke([
