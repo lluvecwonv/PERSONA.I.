@@ -1,5 +1,5 @@
 """
-사용자 의도 감지 모듈 (Stage 3용)
+사용자 의도 감지 모듈 (Stage 3용) - 100% LLM 기반
 """
 import logging
 from langchain_openai import ChatOpenAI
@@ -44,27 +44,15 @@ _REASON_KEYWORDS_ALLOW_TRAILING = (
     "거거든",
     "거거든요",
     "니까",
-    "니까요",
-    "이니까",
-    "이니까요",
     "으니까",
-    "으니까요",
+    "이니까",
     "라서",
-    "라서요",
     "이라서",
-    "이라서요",
     "해서",
-    "해서요",
-    # ✨ ~잖아 패턴 추가 (이유/근거 표현)
+    "아서",
+    "어서",
     "잖아",
-    "잖아요",
-    "잔아",  # 오타 변형
-    "수있잖아",
-    "수있으니까",
-    "수있어서",
-    "가능하잖아",
-    "되잖아",
-    "되니까",
+    "거든",
 )
 _REASON_KEYWORDS_NEED_FOLLOW = (
     "그래서",
@@ -89,70 +77,9 @@ _QUESTION_PREFIXES_NEAR_REASON = (
     "어디",
 )
 
-# ✨ clarification 패턴 (질문을 이해 못함)
-_CLARIFICATION_PATTERNS = (
-    "무슨 말이야",
-    "무슨말이야",
-    "뭔 말이야",
-    "뭔말이야",
-    "뭔 소리야",
-    "뭔소리야",
-    "무슨 소리야",
-    "무슨소리야",
-    "무슨 뜻이야",
-    "무슨뜻이야",
-    "뭔 뜻이야",
-    "뭔뜻이야",
-    "이해가 안 돼",
-    "이해가안돼",
-    "이해 못 했어",
-    "이해못했어",
-    "뭐라고?",
-    "뭐라고",
-    "뭐라는 거야",
-    "뭐라는거야",
-    "무슨 얘기야",
-    "무슨얘기야",
-    "뭔 얘기야",
-    "뭔얘기야",
-    "그게 뭐야",
-    "그게뭐야",
-    "뭐야",
-)
-
-# ✨ dont_know 패턴 (답을 모르겠음)
-_DONT_KNOW_PATTERNS = (
-    "모르겠어",
-    "모르겟어",  # 오타 변형
-    "잘 모르겠어",
-    "잘모르겠어",
-    "잘모르겟어",  # 오타 변형
-    "글쎄",
-    "글세",  # 오타 변형
-    "몰라",
-    "모르겠는데",
-    "모르겟는데",  # 오타 변형
-    "생각이 안 나",
-    "생각안나",
-)
-
-# ✨ 질문 되묻기 패턴 (에이전트 질문을 그대로 되묻는 표현 = 불확실)
-_ECHO_QUESTION_PATTERNS = (
-    "괜찮을까",
-    "될까",
-    "할까",
-    "있을까",
-    "없을까",
-    "맞을까",
-    "좋을까",
-    "나쁠까",
-    "그럴까",
-    "아닐까",
-)
-
 
 class IntentDetector:
-    """사용자 의도 감지 클래스 (Stage 3용) - 100% LLM 기반"""
+    """사용자 의도 감지 클래스 - 100% LLM 기반"""
 
     def __init__(self, analyzer: ChatOpenAI, prompts: dict):
         """
@@ -182,57 +109,7 @@ class IntentDetector:
             - "ask_opinion": 에이전트에게 의견 질문
             - "ask_explanation": 에이전트 말에 대해 "왜?"라고 질문
         """
-        # ✨ 휴리스틱 프리 체크 - LLM 호출 전에 명확한 패턴 먼저 처리
-        normalized = user_message.replace(" ", "").lower()
-
-        # ✨ ask_opinion 패턴 체크 (에이전트에게 의견을 물음) - 다른 패턴보다 우선!
-        ask_opinion_patterns = ("너는", "넌", "네생각", "네 생각", "너생각", "너 생각", "니생각", "넌어떻게", "너는어떻게", "넌 어떻게", "너는 어떻게")
-        for pattern in ask_opinion_patterns:
-            if pattern.replace(" ", "") in normalized:
-                logger.info(f"✅ Heuristic: ask_opinion pattern detected: '{pattern}' in '{user_message}'")
-                return "ask_opinion"
-
-        # clarification 패턴 체크 (질문을 이해 못함)
-        for pattern in _CLARIFICATION_PATTERNS:
-            if pattern.replace(" ", "") in normalized:
-                logger.info(f"✅ Heuristic: clarification pattern detected: '{pattern}' in '{user_message}'")
-                return "clarification"
-
-        # dont_know 패턴 체크 (답을 모르겠음) → "왜 모르겠어?" 질문
-        for pattern in _DONT_KNOW_PATTERNS:
-            if pattern.replace(" ", "") in normalized:
-                logger.info(f"✅ Heuristic: dont_know pattern detected: '{pattern}' in '{user_message}'")
-                return "ask_why_unsure"
-
-        # ✨ 질문 되묻기 패턴 체크 (짧은 "~까?" 질문 = 불확실 표현)
-        # 예: "괜찮을까?", "될까?", "그럴까?" 등
-        if user_message.strip().endswith("?") and len(user_message.strip()) <= 10:
-            for pattern in _ECHO_QUESTION_PATTERNS:
-                if pattern in normalized:
-                    logger.info(f"✅ Heuristic: echo question pattern detected: '{pattern}' in '{user_message}'")
-                    return "ask_why_unsure"
-
-        # ✨ "~문제?", "~걱정?" 같은 짧은 우려 표현은 answer로 처리
-        concern_keywords = ("문제", "걱정", "우려", "불안", "위험", "피해", "손해")
-        if user_message.strip().endswith("?") and len(user_message.strip()) < 15:
-            for keyword in concern_keywords:
-                if keyword in normalized:
-                    logger.info(f"✅ Heuristic: short concern answer detected: '{keyword}' in '{user_message}'")
-                    return "answer"
-
-        # ✨ 짧은 동의/반대 표현은 need_reason으로 처리 (이유를 물어봐야 함)
-        short_agreement_patterns = (
-            "그럴수도", "그럴 수도", "그런것같", "그런 것 같", "그럴것같", "그럴 것 같",
-            "맞아", "맞는것같", "맞는 것 같", "그래", "응", "어", "그렇지",
-            "아닐것같", "아닐 것 같", "아닌것같", "아닌 것 같",
-        )
-        if len(user_message.strip()) <= 15:
-            for pattern in short_agreement_patterns:
-                if pattern.replace(" ", "") in normalized:
-                    logger.info(f"✅ Heuristic: short agreement/disagreement detected: '{pattern}' in '{user_message}' → need_reason")
-                    return "need_reason"
-
-        # ✨ 휴리스틱으로 처리 안 되면 LLM 호출
+        # ✨ 모든 의도 분류는 LLM이 담당 (휴리스틱 제거)
         intent_prompt = format_prompt(
             self.prompts.get("detect_intent", ""),
             user_message=user_message,
@@ -285,8 +162,7 @@ class IntentDetector:
     @staticmethod
     def _contains_reason_statement(text: str) -> bool:
         """
-        간단한 휴리스틱으로 사용자가 이미 이유/근거를 제시했는지 확인한다.
-        LLM이 need_reason을 반환했더라도 이유 연결어가 있으면 answer로 간주한다.
+        간단한 휴리스틱: 사용자가 이미 이유를 설명했으면 need_reason 분기를 막는다.
         """
         if not text:
             return False
@@ -339,7 +215,6 @@ class IntentDetector:
             token_idx = normalized.rfind(token, 0, idx)
             if token_idx == -1:
                 continue
-            # 질문형 “무슨/뭐/어떤/누가/누구/어디 + (한 글자) + 때문에” 패턴만 제외
             distance = idx - token_idx
             if distance <= len(token) + 2:
                 return True
