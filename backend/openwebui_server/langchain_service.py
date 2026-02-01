@@ -37,6 +37,13 @@ class LangChainService:
         "colleague1": "AI가 그린 그림을 어떻게 국립 예술관에 전시를 할 수가 있지? 그걸 예술로 공식적으로 인정한다는 건 말이 안 되네. 나는 무조건 전시 반대에 투표할걸세.",
         "colleague2": "선생님, 저는 AI 예술도 사람들에게 감동을 주면 충분히 가치 있다고 생각해요.",
     }
+    PROFILE_FINAL_MESSAGES = {
+        "jangmo": "...네 뜻 잘 알겠다. 모쪼록 우리 둘의 의견을 잘 고려해서 결정해주렴.",
+        "son": "...그렇군요. 아버지 의견 잘 들었어요. 잘 생각하셔서 결정해주세요.",
+        "colleague1": "...그래, 자네 생각 잘 들었네. 투표 때 신중하게 결정하게나.",
+        "colleague2": "선생님, 좋은 말씀 감사합니다. 투표 때 신중하게 결정해주시길 바랍니다.",
+    }
+    DEFAULT_FINAL_MESSAGE = "대화해줘서 고마워요. 좋은 결정 내리시길 바랍니다."
 
     def __init__(self):
         # Open WebUI 전용 세션
@@ -762,6 +769,21 @@ class LangChainService:
         session_data["messages"].append({"role": "user", "content": message})
         session_data["turn_count"] += 1
         session_data["messages"] = self._trim_profile_history(session_data["messages"])
+
+        # ✨ 7턴이면 마무리 응답 반환 (대화 종료)
+        if session_data["turn_count"] >= 7 and agent_key not in ["friend", "artist_apprentice"]:
+            logger.info(f"🔚 [PROFILE_STREAM] Turn 7 reached - returning final message for {agent_key}")
+            final_message = self.PROFILE_FINAL_MESSAGES.get(agent_key, self.DEFAULT_FINAL_MESSAGE)
+            session_data["messages"].append({"role": "assistant", "content": final_message})
+            for char in final_message:
+                yield char
+            if include_audio:
+                try:
+                    audio_data = await self.text_to_speech(final_message, voice=voice)
+                    yield f"[AUDIO_START]{audio_data}[AUDIO_END]"
+                except Exception as e:
+                    logger.warning(f"TTS failed for stream: {e}")
+            return
 
         try:
             # ✨ Step 1: SPT V2 - DST + Controller로 응답 전략 결정
