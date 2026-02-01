@@ -881,7 +881,10 @@ class LangChainService:
                     session_data["messages"] = filtered_messages[:-1]
                 else:
                     session_data["messages"] = filtered_messages
-                session_data["turn_count"] = len([m for m in session_data["messages"] if m.get("role") == "assistant"])
+                # turn_count는 유저 메시지 개수 기준 (1부터 시작)
+                # assistant 7개 = 유저 6개 + 첫 인사 = 다음은 7턴째
+                user_count = len([m for m in session_data["messages"] if m.get("role") == "user"])
+                session_data["turn_count"] = user_count + 1  # 다음 유저 메시지가 오면 +1되어 정확한 턴
                 logger.info(f"✅ [PROFILE_CHAT] Initialized from external_messages: {len(session_data['messages'])} messages, turn_count={session_data['turn_count']}")
 
         # 🔍 DEBUG: 세션 상태 로깅
@@ -1008,7 +1011,9 @@ class LangChainService:
                     session_data["messages"] = filtered_messages[:-1]
                 else:
                     session_data["messages"] = filtered_messages
-                session_data["turn_count"] = len([m for m in session_data["messages"] if m.get("role") == "assistant"])
+                # turn_count는 유저 메시지 개수 기준 (1부터 시작)
+                user_count = len([m for m in session_data["messages"] if m.get("role") == "user"])
+                session_data["turn_count"] = user_count + 1
                 logger.info(f"✅ [PROFILE_STREAM] Initialized from external_messages: {len(session_data['messages'])} messages, turn_count={session_data['turn_count']}")
 
         if is_first_message:
