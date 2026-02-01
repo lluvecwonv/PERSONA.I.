@@ -603,7 +603,7 @@ class LangChainService:
         profile_sessions = self._get_profile_sessions(is_game_server)
         key = (agent_key, session_id)
         if key not in profile_sessions:
-            profile_sessions[key] = {"messages": [], "turn_count": 0}
+            profile_sessions[key] = {"messages": [], "turn_count": 1}  # Start at 1: frontend greeting = turn 1
         return profile_sessions[key]
 
     def _trim_profile_history(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:

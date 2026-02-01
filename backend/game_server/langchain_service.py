@@ -741,7 +741,7 @@ class LangChainService:
                 profile_sessions[key] = other_sessions[key]
             else:
                 logger.info(f"🆕 [GET_PROFILE_SESSION] Creating new session for key={key}")
-                profile_sessions[key] = {"messages": [], "turn_count": 0}
+                profile_sessions[key] = {"messages": [], "turn_count": 1}  # Start at 1: frontend greeting = turn 1
         else:
             logger.info(f"✅ [GET_PROFILE_SESSION] Found existing session, messages={len(profile_sessions[key].get('messages', []))}, turn_count={profile_sessions[key].get('turn_count', 0)}")
 
