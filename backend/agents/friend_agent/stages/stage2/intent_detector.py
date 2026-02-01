@@ -25,7 +25,7 @@ class IntentDetector:
     YES_RESPONSES = ("응", "웅", "그래", "맞아", "좋아", "당연")
     DONT_KNOW_KEYWORDS = ("모르겠", "모르겠어", "몰라", "글쎄", "잘모르", "잘 모르")
     # ✨ 에이전트에게 의견을 묻는 패턴
-    ASK_OPINION_KEYWORDS = ("너는", "넌", "네생각", "네 생각", "넌어떻게", "너는어떻게", "넌 어떻게", "너는 어떻게")
+    ASK_OPINION_KEYWORDS = ("너는", "넌", "네생각", "네 생각", "너생각", "너 생각", "니생각", "넌어떻게", "너는어떻게", "넌 어떻게", "너는 어떻게")
 
     def __init__(self, analyzer: ChatOpenAI, prompts: dict):
         """

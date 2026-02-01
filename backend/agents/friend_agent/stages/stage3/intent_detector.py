@@ -180,7 +180,7 @@ class IntentDetector:
         normalized = user_message.replace(" ", "").lower()
 
         # ✨ ask_opinion 패턴 체크 (에이전트에게 의견을 물음) - 다른 패턴보다 우선!
-        ask_opinion_patterns = ("너는", "넌", "네생각", "네 생각", "넌어떻게", "너는어떻게", "넌 어떻게", "너는 어떻게")
+        ask_opinion_patterns = ("너는", "넌", "네생각", "네 생각", "너생각", "너 생각", "니생각", "넌어떻게", "너는어떻게", "넌 어떻게", "너는 어떻게")
         for pattern in ask_opinion_patterns:
             if pattern.replace(" ", "") in normalized:
                 logger.info(f"✅ Heuristic: ask_opinion pattern detected: '{pattern}' in '{user_message}'")
