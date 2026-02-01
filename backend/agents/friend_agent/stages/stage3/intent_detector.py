@@ -179,6 +179,13 @@ class IntentDetector:
         # ✨ 휴리스틱 프리 체크 - LLM 호출 전에 명확한 패턴 먼저 처리
         normalized = user_message.replace(" ", "").lower()
 
+        # ✨ ask_opinion 패턴 체크 (에이전트에게 의견을 물음) - 다른 패턴보다 우선!
+        ask_opinion_patterns = ("너는", "넌", "네생각", "네 생각", "넌어떻게", "너는어떻게", "넌 어떻게", "너는 어떻게")
+        for pattern in ask_opinion_patterns:
+            if pattern.replace(" ", "") in normalized:
+                logger.info(f"✅ Heuristic: ask_opinion pattern detected: '{pattern}' in '{user_message}'")
+                return "ask_opinion"
+
         # clarification 패턴 체크 (질문을 이해 못함)
         for pattern in _CLARIFICATION_PATTERNS:
             if pattern.replace(" ", "") in normalized:
