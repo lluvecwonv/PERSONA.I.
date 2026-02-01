@@ -731,7 +731,7 @@ class LangChainService:
             if agent_key in ["friend", "artist_apprentice"]:
                 is_end = False
             else:
-                is_end = session_data["turn_count"] >= 7
+                is_end = session_data["turn_count"] >= 8
 
             result_dict = {
                 "response": response_text,

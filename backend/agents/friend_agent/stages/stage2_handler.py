@@ -75,6 +75,29 @@ class Stage2Handler:
             logger.error(f"Stage2 explanation detection error: {e}")
             return False
 
+    def _handle_ask_opinion(self, user_message: str, messages: list) -> str:
+        """
+        에이전트에게 의견을 물었을 때 처리 → "잘 모르겠다"고 답변
+
+        Args:
+            user_message: 사용자 메시지
+            messages: 전체 대화 기록
+
+        Returns:
+            "잘 모르겠다" + 되묻기 응답
+        """
+        # ✨ 다양한 "잘 모르겠다" 응답 중 하나 선택
+        import random
+        responses = [
+            "음, 나는 솔직히 잘 모르겠어. 오히려 네 생각이 궁금해. 너는 어떻게 생각해?",
+            "글쎄... 나도 어떻게 생각해야 할지 모르겠더라. 너는 어때?",
+            "나? 나는 아직 잘 모르겠어. 그래서 네 의견이 궁금한 건데. 어떻게 생각해?",
+            "솔직히 나도 정리가 안 됐어. 네가 어떻게 생각하는지 먼저 듣고 싶어."
+        ]
+        response = random.choice(responses)
+        logger.info(f"✅ [Stage2] Responding to ask_opinion with: {response}")
+        return response
+
     @staticmethod
     def generate_acknowledgment_and_transition(llm: ChatOpenAI, messages: list, prompts: Dict[str, str]) -> str:
         """
@@ -149,7 +172,12 @@ class Stage2Handler:
 
             needs_explanation = self._needs_explanation(user_message, messages)
 
-            if intent == "opinion":
+            if intent == "ask_opinion":
+                # ✨ 에이전트에게 의견을 물음 → "잘 모르겠다"고 답변
+                response = self._handle_ask_opinion(user_message, messages)
+                stage2_complete = False
+                logger.info("⚠️ User asked for agent's opinion - responding with 'I don't know'")
+            elif intent == "opinion":
                 # 충분한 의견 → Stage 3로 전환
                 response = self.transition_generator.generate(user_message)
                 stage2_complete = True

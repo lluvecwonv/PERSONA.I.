@@ -24,6 +24,8 @@ class IntentDetector:
     )
     YES_RESPONSES = ("응", "웅", "그래", "맞아", "좋아", "당연")
     DONT_KNOW_KEYWORDS = ("모르겠", "모르겠어", "몰라", "글쎄", "잘모르", "잘 모르")
+    # ✨ 에이전트에게 의견을 묻는 패턴
+    ASK_OPINION_KEYWORDS = ("너는", "넌", "네생각", "네 생각", "넌어떻게", "너는어떻게", "넌 어떻게", "너는 어떻게")
 
     def __init__(self, analyzer: ChatOpenAI, prompts: dict):
         """
@@ -46,11 +48,17 @@ class IntentDetector:
             "opinion" - 명확한 의견을 냄 (Stage 3로 전환)
             "unclear" - 모호하거나 무관한 답변 (다시 질문)
             "dont_know" - 모르겠다고 함 (설명 필요)
+            "ask_opinion" - 에이전트에게 의견을 물음 (잘 모르겠다고 답변)
         """
         if not user_message:
             return "unclear"
 
         normalized = user_message.strip().lower().replace(" ", "")
+
+        # ✨ 에이전트에게 의견을 묻는지 먼저 체크
+        if any(keyword in normalized for keyword in self.ASK_OPINION_KEYWORDS):
+            logger.info(f"✅ [Stage2Intent] Heuristic ask_opinion detected: {user_message}")
+            return "ask_opinion"
 
         if any(keyword in normalized for keyword in self.DONT_KNOW_KEYWORDS):
             logger.info(f"✅ [Stage2Intent] Heuristic dont_know detected: {user_message}")
