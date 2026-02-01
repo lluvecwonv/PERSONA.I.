@@ -922,9 +922,9 @@ class LangChainService:
             session_data["turn_count"] += 1
         session_data["messages"] = self._trim_profile_history(session_data["messages"])
 
-        # ✨ 7턴이면 마무리 응답 반환 (대화 종료)
-        if session_data["turn_count"] >= 7 and agent_key not in ["friend", "artist_apprentice"]:
-            logger.info(f"🔚 [PROFILE_CHAT] Turn 7 reached - returning final message for {agent_key}")
+        # ✨ 8턴이면 마무리 응답 반환 (대화 종료)
+        if session_data["turn_count"] >= 8 and agent_key not in ["friend", "artist_apprentice"]:
+            logger.info(f"🔚 [PROFILE_CHAT] Turn 8 reached - returning final message for {agent_key}")
             final_message = self._get_final_message(agent, agent_key)
             session_data["messages"].append({"role": "assistant", "content": final_message})
             result_dict = {
@@ -1049,9 +1049,9 @@ class LangChainService:
             session_data["turn_count"] += 1
         session_data["messages"] = self._trim_profile_history(session_data["messages"])
 
-        # ✨ 7턴이면 마무리 응답 반환 (대화 종료)
-        if session_data["turn_count"] >= 7 and agent_key not in ["friend", "artist_apprentice"]:
-            logger.info(f"🔚 [PROFILE_STREAM] Turn 7 reached - returning final message for {agent_key}")
+        # ✨ 8턴이면 마무리 응답 반환 (대화 종료)
+        if session_data["turn_count"] >= 8 and agent_key not in ["friend", "artist_apprentice"]:
+            logger.info(f"🔚 [PROFILE_STREAM] Turn 8 reached - returning final message for {agent_key}")
             final_message = self._get_final_message(agent, agent_key)
             session_data["messages"].append({"role": "assistant", "content": final_message})
             for char in final_message:
