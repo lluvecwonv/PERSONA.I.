@@ -188,6 +188,36 @@ If ANY of the above is NOT a clear YES, my response has drifted toward one of th
 
 ---
 
+**Step 2.7: Previous Question Analysis (CRITICAL - 중복 질문 방지)**
+
+Recent conversation:
+{history}
+
+**Task: Identify ALL questions you (Agent) already asked in this conversation.**
+
+1. List every question you asked in previous turns:
+   - Turn 1: [question or "none"]
+   - Turn 2: [question or "none"]
+   - ...
+
+2. **FORBIDDEN questions** (DO NOT ask these again):
+   - Any question with the same meaning as above
+   - "아버지는 어떻게 생각하세요?" if already used
+   - Questions about the same topic already discussed
+
+3. **Suggest 2 NEW questions** that:
+   - Cover a different perspective (가족 치유, 기술 가능성, 엄마 추억, 미래 등)
+   - Use different phrasing
+   - Advance the conversation to a new angle
+
+Example forbidden patterns:
+- Asked "엄마가 이걸 원하셨을까요?" → Don't ask about mother's wishes again
+- Asked "아버지 생각은요?" → Use different phrasing like "어떤 점이 걱정되세요?"
+
+⚠️ If you detect you're about to repeat a question, STOP and choose from your suggested alternatives.
+
+---
+
 **Step 3: SPT Necessity Check**
 
 Analyze the user's last message: "{last_user_msg}"
