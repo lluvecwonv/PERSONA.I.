@@ -635,28 +635,32 @@ class LangChainService:
                 logger.info(f"✅ [PROFILE_CHAT] Initialized from external_messages: {len(session_data['messages'])} messages, turn_count={session_data['turn_count']}")
 
         if is_first_message:
-            if message:
-                session_data["messages"].append({"role": "user", "content": message})
-                session_data["turn_count"] = 1  # 유저 메시지 있으면 turn 1
-            else:
-                session_data["turn_count"] = 0  # 유저 메시지 없으면 turn 0
-
+            # 프론트엔드 인사를 history에 추가 (agent가 맥락을 알도록)
             initial_message = self._get_profile_initial_message(agent_key, agent)
             session_data["messages"].append({"role": "assistant", "content": initial_message})
-            result_dict = {
-                "response": initial_message,
-                "session_id": session_id,
-                "metadata": {"stage": agent_key, "message_count": len(session_data["messages"]), "turn_count": session_data["turn_count"], "is_end": False, "is_first": True}
-            }
-            if include_audio:
-                try:
-                    result_dict["audio"] = await self.text_to_speech(initial_message, voice=voice)
-                except Exception:
-                    pass
-            return result_dict
 
+            if not message:
+                # 메시지 없으면 인사만 반환
+                session_data["turn_count"] = 0
+                result_dict = {
+                    "response": initial_message,
+                    "session_id": session_id,
+                    "metadata": {"stage": agent_key, "message_count": len(session_data["messages"]), "turn_count": session_data["turn_count"], "is_end": False, "is_first": True}
+                }
+                if include_audio:
+                    try:
+                        result_dict["audio"] = await self.text_to_speech(initial_message, voice=voice)
+                    except Exception:
+                        pass
+                return result_dict
+            # message가 있으면 아래로 진행하여 agent가 처리하도록 함
+
+        # 유저 메시지 추가 및 턴 카운트
         session_data["messages"].append({"role": "user", "content": message})
-        session_data["turn_count"] += 1
+        if is_first_message:
+            session_data["turn_count"] = 1  # 첫 턴
+        else:
+            session_data["turn_count"] += 1
         session_data["messages"] = self._trim_profile_history(session_data["messages"])
 
         # ✨ 7턴이면 마무리 응답 반환 (대화 종료)
@@ -768,27 +772,30 @@ class LangChainService:
                 logger.info(f"✅ [PROFILE_STREAM] Initialized from external_messages: {len(session_data['messages'])} messages, turn_count={session_data['turn_count']}")
 
         if is_first_message:
-            if message:
-                session_data["messages"].append({"role": "user", "content": message})
-                session_data["turn_count"] = 1  # 유저 메시지 있으면 turn 1
-            else:
-                session_data["turn_count"] = 0  # 유저 메시지 없으면 turn 0
-
+            # 프론트엔드 인사를 history에 추가 (agent가 맥락을 알도록)
             initial_message = self._get_profile_initial_message(agent_key, agent)
             session_data["messages"].append({"role": "assistant", "content": initial_message})
-            for char in initial_message:
-                yield char
-            # ✨ TTS 지원: 텍스트 스트리밍 후 오디오 데이터 전송
-            if include_audio:
-                try:
-                    audio_data = await self.text_to_speech(initial_message, voice=voice)
-                    yield f"[AUDIO_START]{audio_data}[AUDIO_END]"
-                except Exception as e:
-                    logger.warning(f"TTS failed for stream: {e}")
-            return
 
+            if not message:
+                # 메시지 없으면 인사만 반환
+                session_data["turn_count"] = 0
+                for char in initial_message:
+                    yield char
+                if include_audio:
+                    try:
+                        audio_data = await self.text_to_speech(initial_message, voice=voice)
+                        yield f"[AUDIO_START]{audio_data}[AUDIO_END]"
+                    except Exception as e:
+                        logger.warning(f"TTS failed for stream: {e}")
+                return
+            # message가 있으면 아래로 진행하여 agent가 처리하도록 함
+
+        # 유저 메시지 추가 및 턴 카운트
         session_data["messages"].append({"role": "user", "content": message})
-        session_data["turn_count"] += 1
+        if is_first_message:
+            session_data["turn_count"] = 1  # 첫 턴
+        else:
+            session_data["turn_count"] += 1
         session_data["messages"] = self._trim_profile_history(session_data["messages"])
 
         # ✨ 7턴이면 마무리 응답 반환 (대화 종료)
