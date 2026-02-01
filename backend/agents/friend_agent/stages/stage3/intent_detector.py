@@ -136,6 +136,20 @@ _DONT_KNOW_PATTERNS = (
     "생각안나",
 )
 
+# ✨ 질문 되묻기 패턴 (에이전트 질문을 그대로 되묻는 표현 = 불확실)
+_ECHO_QUESTION_PATTERNS = (
+    "괜찮을까",
+    "될까",
+    "할까",
+    "있을까",
+    "없을까",
+    "맞을까",
+    "좋을까",
+    "나쁠까",
+    "그럴까",
+    "아닐까",
+)
+
 
 class IntentDetector:
     """사용자 의도 감지 클래스 (Stage 3용) - 100% LLM 기반"""
@@ -202,6 +216,17 @@ class IntentDetector:
                 else:
                     # ✨ "글세", "모르겠어" 첫 번째 → "왜 모르겠어?" 질문
                     return "ask_why_unsure"
+
+        # ✨ 질문 되묻기 패턴 체크 (짧은 "~까?" 질문 = 불확실 표현)
+        # 예: "괜찮을까?", "될까?", "그럴까?" 등
+        if user_message.strip().endswith("?") and len(user_message.strip()) <= 10:
+            for pattern in _ECHO_QUESTION_PATTERNS:
+                if pattern in normalized:
+                    logger.info(f"✅ Heuristic: echo question pattern detected: '{pattern}' in '{user_message}'")
+                    if dont_know_count >= 1:
+                        return "dont_know_second"
+                    else:
+                        return "ask_why_unsure"
 
         # ✨ "~문제?", "~걱정?" 같은 짧은 우려 표현은 answer로 처리
         concern_keywords = ("문제", "걱정", "우려", "불안", "위험", "피해", "손해")
