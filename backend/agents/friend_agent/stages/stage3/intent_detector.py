@@ -288,6 +288,9 @@ class IntentDetector:
             elif "ask_opinion" in intent:
                 logger.info("Detected intent: ask_opinion")
                 final_intent = "ask_opinion"
+            elif "ask_explanation" in intent:
+                logger.info("Detected intent: ask_explanation")
+                final_intent = "ask_explanation"
             else:
                 # 일부 모델은 "answer" 이외의 텍스트를 반환할 수 있으므로 안전하게 처리
                 logger.info(f"Detected intent: answer (default for '{intent}')")

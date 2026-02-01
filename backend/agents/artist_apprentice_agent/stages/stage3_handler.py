@@ -172,6 +172,12 @@ class Stage3Handler:
                 is_sufficient = False  # 아직 끝나지 않음
                 state["variation_index"] = variation_index
                 logger.info(f"⚠️ [Stage3] Keeping same question: current_question_index={current_question_index}, next_question_index={next_question_index}")
+        elif intent == "ask_explanation":
+            # ✨ 에이전트가 한 말에 대해 "왜?"라고 설명 요청
+            response = self._handle_ask_explanation(user_message, current_question_index, context)
+            next_question_index = current_question_index  # 같은 질문 계속
+            is_sufficient = False
+            logger.info(f"💡 [Stage3] User asked for explanation - staying on Q{current_question_index}")
         else:
             # 일반 대답 → 다음 질문으로
             logger.info(f"✅ [Stage3] User answered question #{current_question_index} (Q{current_question_index + 1}/5)")
@@ -358,3 +364,44 @@ class Stage3Handler:
         except Exception as e:
             logger.error(f"❌ Error generating ask_why_unsure response: {e}")
             return f"아직 잘 모르시는군요. 어떤 부분이 헷갈리세요?"
+
+    def _handle_ask_explanation(self, user_message: str, question_index: int, context: str) -> str:
+        """
+        에이전트가 한 말에 대해 "왜?"라고 설명 요청 처리
+
+        Args:
+            user_message: 사용자 메시지 (예: "왜 못물어?", "왜 그래?")
+            question_index: 현재 질문 인덱스
+            context: 대화 컨텍스트
+
+        Returns:
+            설명 + 질문
+        """
+        from utils import format_prompt
+
+        questions = self.ethics_topics.get("questions", [])
+        if 0 <= question_index < len(questions):
+            current_question_data = questions[question_index]
+            variations = current_question_data.get("variations", [])
+            original_question = variations[0] if variations else "이 부분에 대해 어떻게 생각하세요?"
+        else:
+            original_question = "이 부분에 대해 어떻게 생각하세요?"
+
+        # ✨ 프롬프트 파일에서 로드
+        prompt_template = self.prompts.get("stage3_explain_reasoning", "")
+
+        # 프롬프트 포맷팅
+        prompt = format_prompt(
+            prompt_template,
+            persona_prompt=self.persona_prompt,
+            context=context,
+            user_message=user_message,
+            original_question=original_question
+        )
+
+        try:
+            result = self.llm.invoke(prompt)
+            return result.content.strip().strip('"')
+        except Exception as e:
+            logger.error(f"❌ Error generating ask_explanation response: {e}")
+            return f"그런 질문을 드린 건 여러 관점이 있어서예요. 선생님은 어떻게 생각하세요?"

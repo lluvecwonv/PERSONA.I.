@@ -169,6 +169,9 @@ class IntentDetector:
             elif "clarification" in intent:
                 logger.info(f"🔍 [Intent Detection] ❌ RESULT: clarification (will repeat question)")
                 return "clarification"
+            elif "ask_explanation" in intent:
+                logger.info(f"🔍 [Intent Detection] 💡 RESULT: ask_explanation (user asks why)")
+                return "ask_explanation"
             else:
                 # 모든 일반 답변은 "answer"로 처리
                 logger.info(f"🔍 [Intent Detection] ✅ RESULT: answer (will move to next question)")

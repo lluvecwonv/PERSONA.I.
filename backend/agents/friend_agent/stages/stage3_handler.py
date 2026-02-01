@@ -182,6 +182,13 @@ class Stage3Handler:
             is_sufficient = False
             logger.info(f"⚠️ User asked for opinion - staying on Q{current_question_index}")
 
+        elif intent == "ask_explanation":
+            # ✨ 에이전트가 한 말에 대해 "왜?"라고 설명 요청
+            response = self._handle_ask_explanation(user_message, current_question_index, context)
+            next_question_index = current_question_index  # 같은 질문 계속
+            is_sufficient = False
+            logger.info(f"💡 User asked for explanation - staying on Q{current_question_index}")
+
         else:
             # answer: 일반 대답 → 다음 질문으로
             logger.info(f"✅ User answered question #{current_question_index}")
@@ -350,6 +357,39 @@ class Stage3Handler:
 
         # ✨ 프롬프트 파일에서 로드
         prompt_template = self.prompts.get("stage3_concept_explanation", "")
+
+        # 프롬프트 포맷팅
+        prompt = format_prompt(
+            prompt_template,
+            persona_prompt=self.persona_prompt,
+            context=context,
+            user_message=user_message,
+            original_question=original_question
+        )
+
+        result = self.llm.invoke(prompt)
+        return result.content.strip().strip('"')
+
+    def _handle_ask_explanation(self, user_message: str, question_index: int, context: str) -> str:
+        """
+        에이전트가 한 말에 대해 "왜?"라고 설명 요청 처리
+
+        Args:
+            user_message: 사용자 메시지 (예: "왜 못물어?", "왜 그래?")
+            question_index: 현재 질문 인덱스
+            context: 대화 컨텍스트
+
+        Returns:
+            설명 + 질문
+        """
+        if 0 <= question_index < len(self.ethics_topics):
+            question_data = self.ethics_topics[question_index]
+            original_question = question_data.get("variations", [""])[0]
+        else:
+            original_question = "이 부분에 대해 어떻게 생각해?"
+
+        # ✨ 프롬프트 파일에서 로드
+        prompt_template = self.prompts.get("stage3_explain_reasoning", "")
 
         # 프롬프트 포맷팅
         prompt = format_prompt(

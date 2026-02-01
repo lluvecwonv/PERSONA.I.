@@ -38,10 +38,18 @@ Categories (in priority order):
      - "화가들이 피해볼 것 같아. AI가 일자리를 뺏으니까" → answer (이유 있음)
    - 이유 표현이 있으면 answer: ~하니까, ~라서, ~거든, ~잖아, ~때문에
 
+7. ask_explanation - 에이전트가 한 말에 대해 "왜?"라고 설명 요청
+   - 에이전트가 질문한 내용에 대해 유저가 "왜?" "왜 그래?" "이유가 뭐야?" 물을 때
+   - 예: 에이전트: "책임을 묻는 게 가능할까요?" → 유저: "왜 못물어?" → ask_explanation
+   - 예: 에이전트: "문제가 될 수 있을까요?" → 유저: "왜 문제야?" → ask_explanation
+   - 예: 유저가 "근데 왜?", "그게 왜?", "왜 안돼?", "왜 그런거야?" 등 물으면 ask_explanation
+   - ⚠️ 유저가 자기 의견의 이유를 말하는 게 아니라, 에이전트 말에 대한 설명을 요구하는 것!
+
 ⚠️ 핵심 판단 기준:
 - 모르겠다/망설임 표현 → dont_know
 - 의견만 있고 이유가 없으면 → need_reason
 - 의견 + 이유가 있으면 → answer
 - 질문과 무관하면 → clarification
+- 에이전트 말에 "왜?"라고 물으면 → ask_explanation
 
-Return one lowercase label: answer, need_reason, dont_know, ask_concept, clarification, or ask_opinion.
+Return one lowercase label: answer, need_reason, dont_know, ask_concept, clarification, ask_opinion, or ask_explanation.
