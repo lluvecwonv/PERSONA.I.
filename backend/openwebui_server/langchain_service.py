@@ -657,6 +657,23 @@ class LangChainService:
         session_data["turn_count"] += 1
         session_data["messages"] = self._trim_profile_history(session_data["messages"])
 
+        # ✨ 7턴이면 마무리 응답 반환 (대화 종료)
+        if session_data["turn_count"] >= 7 and agent_key not in ["friend", "artist_apprentice"]:
+            logger.info(f"🔚 [PROFILE_CHAT] Turn 7 reached - returning final message for {agent_key}")
+            final_message = self.PROFILE_FINAL_MESSAGES.get(agent_key, self.DEFAULT_FINAL_MESSAGE)
+            session_data["messages"].append({"role": "assistant", "content": final_message})
+            result_dict = {
+                "response": final_message,
+                "session_id": session_id,
+                "metadata": {"stage": agent_key, "message_count": len(session_data["messages"]), "turn_count": session_data["turn_count"], "is_end": True}
+            }
+            if include_audio:
+                try:
+                    result_dict["audio"] = await self.text_to_speech(final_message, voice=voice)
+                except Exception:
+                    pass
+            return result_dict
+
         try:
             # ✨ Step 1: SPT V2 - DST + Controller로 응답 전략 결정
             logger.info(f"🧠 [PROFILE_CHAT] Step 1: Calling SPT V2 for strategy decision...")
