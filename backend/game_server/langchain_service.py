@@ -896,15 +896,16 @@ class LangChainService:
         if is_first_message:
             if message:
                 session_data["messages"].append({"role": "user", "content": message})
+                session_data["turn_count"] = 1  # 유저 메시지 있으면 turn 1
+            else:
+                session_data["turn_count"] = 0  # 유저 메시지 없으면 turn 0
 
             initial_message = self._get_initial_message(agent, agent_key)
             session_data["messages"].append({"role": "assistant", "content": initial_message})
-            # turn_count는 유저 메시지 기준. 초기 인사는 turn 0
-            session_data["turn_count"] = 0
             result_dict = {
                 "response": initial_message,
                 "session_id": session_id,
-                "metadata": {"stage": agent_key, "message_count": len(session_data["messages"]), "turn_count": 0, "is_end": False, "is_first": True}
+                "metadata": {"stage": agent_key, "message_count": len(session_data["messages"]), "turn_count": session_data["turn_count"], "is_end": False, "is_first": True}
             }
             if include_audio:
                 try:
@@ -1020,11 +1021,12 @@ class LangChainService:
         if is_first_message:
             if message:
                 session_data["messages"].append({"role": "user", "content": message})
+                session_data["turn_count"] = 1  # 유저 메시지 있으면 turn 1
+            else:
+                session_data["turn_count"] = 0  # 유저 메시지 없으면 turn 0
 
             initial_message = self._get_initial_message(agent, agent_key)
             session_data["messages"].append({"role": "assistant", "content": initial_message})
-            # turn_count는 유저 메시지 기준. 초기 인사는 turn 0
-            session_data["turn_count"] = 0
             for char in initial_message:
                 yield char
             # ✨ TTS 지원: 텍스트 스트리밍 후 오디오 데이터 전송
