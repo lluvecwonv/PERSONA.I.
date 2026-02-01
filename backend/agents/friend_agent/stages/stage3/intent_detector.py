@@ -163,32 +163,24 @@ class IntentDetector:
         self.analyzer = analyzer
         self.prompts = prompts
 
-    def detect(
-        self,
-        user_message: str,
-        question_index: int = 0,
-        dont_know_count: int = 0,
-        context: str = "",
-        next_topic_question: str = ""
-    ) -> str:
+    def detect(self, user_message: str, current_question: str = "", context: str = "") -> str:
         """
-        사용자의 의도를 판단 (휴리스틱 + LLM 기반)
+        사용자가 질문을 이해했는지 판단 (100% LLM 기반)
 
         Args:
             user_message: 사용자 메시지
-            question_index: 현재 질문 인덱스
-            dont_know_count: 모르겠다 표현 횟수
+            current_question: 현재 질문
             context: 최근 대화 히스토리
-            next_topic_question: 다음에 물어볼 질문
 
         Returns:
             의도:
-            - "answer": 질문에 대한 답변
+            - "answer": 질문에 대한 답변 (이유 포함)
+            - "need_reason": 의견만 있고 이유 없음 → "왜 그렇게 생각해?" 질문
             - "ask_concept": 개념 설명 요청 (예: "자율성이 뭐야?")
-            - "clarification": 질문 이해 못함 / 모르겠다
-            - "dont_know_second": 동일 질문에서 두 번째 모름/망설임
-            - "unrelated": 무관한 응답
-            - "ask_opinion": 의견을 물어봄
+            - "clarification": 질문 이해 못함
+            - "ask_why_unsure": 모르겠다고 함 → "왜 모르겠어?" 질문
+            - "ask_opinion": 에이전트에게 의견 질문
+            - "ask_explanation": 에이전트 말에 대해 "왜?"라고 질문
         """
         # ✨ 휴리스틱 프리 체크 - LLM 호출 전에 명확한 패턴 먼저 처리
         normalized = user_message.replace(" ", "").lower()
@@ -210,12 +202,7 @@ class IntentDetector:
         for pattern in _DONT_KNOW_PATTERNS:
             if pattern.replace(" ", "") in normalized:
                 logger.info(f"✅ Heuristic: dont_know pattern detected: '{pattern}' in '{user_message}'")
-                # dont_know_count에 따라 ask_why_unsure 또는 dont_know_second 반환
-                if dont_know_count >= 1:
-                    return "dont_know_second"
-                else:
-                    # ✨ "글세", "모르겠어" 첫 번째 → "왜 모르겠어?" 질문
-                    return "ask_why_unsure"
+                return "ask_why_unsure"
 
         # ✨ 질문 되묻기 패턴 체크 (짧은 "~까?" 질문 = 불확실 표현)
         # 예: "괜찮을까?", "될까?", "그럴까?" 등
@@ -223,10 +210,7 @@ class IntentDetector:
             for pattern in _ECHO_QUESTION_PATTERNS:
                 if pattern in normalized:
                     logger.info(f"✅ Heuristic: echo question pattern detected: '{pattern}' in '{user_message}'")
-                    if dont_know_count >= 1:
-                        return "dont_know_second"
-                    else:
-                        return "ask_why_unsure"
+                    return "ask_why_unsure"
 
         # ✨ "~문제?", "~걱정?" 같은 짧은 우려 표현은 answer로 처리
         concern_keywords = ("문제", "걱정", "우려", "불안", "위험", "피해", "손해")
@@ -252,68 +236,50 @@ class IntentDetector:
         intent_prompt = format_prompt(
             self.prompts.get("detect_intent", ""),
             user_message=user_message,
-            current_topic="",  # 더 이상 사용하지 않음
-            dont_know_count=dont_know_count,
-            context=context,
-            next_topic_question=next_topic_question
+            current_question=current_question,
+            context=context
         )
 
         try:
+            logger.info(f"🔍 [Intent Detection] User message: '{user_message}'")
+            logger.info(f"🔍 [Intent Detection] Prompt length: {len(intent_prompt)} chars")
+
             result = self.analyzer.invoke(intent_prompt)
             intent = result.content.strip().lower()
-            logger.info(f"LLM intent detection result: '{intent}' for message: {user_message[:50]}...")
 
-            final_intent = "answer"
-            if "ask_concept" in intent:
-                logger.info("Detected intent: ask_concept")
-                final_intent = "ask_concept"
+            logger.info(f"🔍 [Intent Detection] LLM raw response: '{intent}'")
+
+            # 의도 분류
+            if "ask_opinion" in intent:
+                logger.info(f"🔍 [Intent Detection] 💬 RESULT: ask_opinion (user asks for agent's opinion)")
+                return "ask_opinion"
+            elif "ask_concept" in intent:
+                logger.info(f"🔍 [Intent Detection] 📚 RESULT: ask_concept (will explain concept)")
+                return "ask_concept"
             elif "need_reason" in intent:
                 if self._contains_reason_statement(user_message):
                     logger.info(
-                        "Detected intent: need_reason but found explicit reasoning markers → override to answer"
+                        "🔍 [Intent Detection] need_reason flagged but reasoning markers detected → override to answer"
                     )
-                    final_intent = "answer"
-                else:
-                    logger.info("Detected intent: need_reason (follow-up required)")
-                    final_intent = "need_reason"
-            elif "clarification" in intent:
-                logger.info("Detected intent: clarification")
-                final_intent = "clarification"
-            elif "dont_know_second" in intent:
-                logger.info("Detected intent: dont_know_second")
-                final_intent = "dont_know_second"
-            elif "unrelated" in intent:
-                logger.info("Detected intent: unrelated")
-                final_intent = "unrelated"
-            elif "ask_opinion" in intent:
-                logger.info("Detected intent: ask_opinion")
-                final_intent = "ask_opinion"
-            elif "ask_explanation" in intent:
-                logger.info("Detected intent: ask_explanation")
-                final_intent = "ask_explanation"
-            else:
-                # 일부 모델은 "answer" 이외의 텍스트를 반환할 수 있으므로 안전하게 처리
-                logger.info(f"Detected intent: answer (default for '{intent}')")
-                final_intent = "answer"
-
-            # ✨ LLM이 dont_know_second를 반환해도, dont_know_count=0이면 ask_why_unsure로 변환
-            if final_intent == "dont_know_second" and dont_know_count == 0:
-                logger.info("LLM returned dont_know_second but count=0 → switching to ask_why_unsure")
+                    return "answer"
+                logger.info("🔍 [Intent Detection] 🔁 RESULT: need_reason (ask for reasoning)")
+                return "need_reason"
+            elif "dont_know" in intent or "dont know" in intent:
+                # ✨ "모르겠어" 같은 불확실한 응답 → "왜 모르겠어?" 질문
+                logger.info(f"🔍 [Intent Detection] ⚠️ RESULT: ask_why_unsure (user is unsure)")
                 return "ask_why_unsure"
-
-            # ✨ 짧은 답변이면서 이유가 없으면 need_reason으로 전환
-            if final_intent == "answer":
-                if self._is_positive_response(user_message):
-                    # "웅 도움 될 것 같아" 같은 긍정 답변 → need_reason으로
-                    logger.info("Detected positive response without reason → switching to need_reason")
-                    return "need_reason"
-                elif self._needs_reason_follow_up(user_message):
-                    logger.info("Detected short answer without explicit reasoning → switching to need_reason")
-                    return "need_reason"
-
-            return final_intent
+            elif "clarification" in intent:
+                logger.info(f"🔍 [Intent Detection] ❌ RESULT: clarification (will repeat question)")
+                return "clarification"
+            elif "ask_explanation" in intent:
+                logger.info(f"🔍 [Intent Detection] 💡 RESULT: ask_explanation (user asks why)")
+                return "ask_explanation"
+            else:
+                # 모든 일반 답변은 "answer"로 처리
+                logger.info(f"🔍 [Intent Detection] ✅ RESULT: answer (will move to next question)")
+                return "answer"
         except Exception as e:
-            logger.error(f"Intent detection error: {e}")
+            logger.error(f"❌ Intent detection error: {e}")
             return "answer"  # 기본값: 다음 질문으로
 
     @staticmethod
@@ -351,76 +317,6 @@ class IntentDetector:
 
         if IntentDetector._matches_plain_ttaemun_reason(normalized):
             return True
-
-        return False
-
-    @staticmethod
-    def _needs_reason_follow_up(text: str) -> bool:
-        """
-        짧은 단정형 답변이면서 이유 표현이 없으면 추가 근거를 물어보도록 표시
-        ✨ 너무 짧은 경우(10자 이하)만 need_reason으로 처리
-        """
-        if not text:
-            return False
-
-        stripped = text.strip()
-        if not stripped:
-            return False
-
-        # ✨ 이유가 포함되어 있으면 False (더 이상 물어보지 않음)
-        if IntentDetector._contains_reason_statement(stripped):
-            return False
-
-        # ✨ 10자 이하의 매우 짧은 답변만 need_reason으로 처리
-        # (예: "응", "그래", "맞아" 등)
-        if len(stripped) > 10:
-            return False
-
-        return True
-
-    @staticmethod
-    def _is_positive_response(text: str) -> bool:
-        """
-        긍정적 답변인지 확인 (예: "웅 도움 될 것 같아", "그럴 것 같아")
-        이런 답변은 이유를 물어봐야 함
-        """
-        if not text:
-            return False
-
-        normalized = text.replace(" ", "").lower()
-
-        # 긍정 답변 패턴
-        positive_patterns = (
-            "도움될것같",
-            "도움이될것같",
-            "도움줄것같",
-            "도움을줄것같",
-            "좋을것같",
-            "괜찮을것같",
-            "그럴것같",
-            "그런것같",
-            "맞는것같",
-            "맞을것같",
-            "될것같",
-            "할것같",
-            "있을것같",
-            "도움되겠",
-            "도움이되겠",
-            "도움줄거같",
-            "도움될거같",
-            "좋을거같",
-            "괜찮을거같",
-            "그럴거같",
-            "될거같",
-        )
-
-        # 이유가 이미 포함되어 있으면 False
-        if IntentDetector._contains_reason_statement(text):
-            return False
-
-        for pattern in positive_patterns:
-            if pattern in normalized:
-                return True
 
         return False
 

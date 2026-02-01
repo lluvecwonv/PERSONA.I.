@@ -4,12 +4,6 @@ Stage 3: 윤리 주제 탐구 대화
 from typing import Dict, Any
 import logging
 from langchain_openai import ChatOpenAI
-import sys
-from pathlib import Path
-
-# utils.py 임포트
-sys.path.append(str(Path(__file__).parent.parent.parent))
-from utils import format_prompt
 
 from .stage3 import (
     IntentDetector,
@@ -29,7 +23,7 @@ class Stage3Handler:
         llm: ChatOpenAI,
         analyzer: ChatOpenAI,
         prompts: Dict[str, str],
-        ethics_topics: list,  # 단순 배열로 변경
+        ethics_topics: Dict[str, Any],
         persona_prompt: str = ""
     ):
         self.llm = llm
@@ -46,14 +40,12 @@ class Stage3Handler:
 
     def handle(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Stage 3 처리: 윤리 질문 탐구 대화
+        Stage 3 처리: 윤리 주제 탐구 대화
 
         로직:
-        1. 질문의 답을 하기 → 다음 질문으로
-        2. 질문 해석해달라고/모르겠다 → 재질문 제공 (variation 사용)
-        3. 질문과 무관한 응답 → 게임 설정에 맞게 답하고 질문 다시
-        4. "너는 어떻게 생각해" → "잘 모르겠다" 표현하고 질문 다시
-        5. 5개 질문 다 응답하면 대화 끝
+        1. 질문에 답을 함 → 다음 질문으로
+        2. 질문 이해 못함/모르겠다 → 재질문 제공 (variation 사용)
+        3. 5개 질문 다 응답하면 대화 끝
 
         Args:
             state: 현재 대화 상태
@@ -63,150 +55,151 @@ class Stage3Handler:
         """
         messages = state.get("messages", [])
         current_question_index = state.get("current_question_index", 0)  # 현재 질문 인덱스 (0~4)
-        dont_know_count = state.get("dont_know_count", 0)  # 현재 질문의 모르겠다 횟수
+        variation_index = state.get("variation_index", 0)  # 현재 질문의 변형 인덱스
+        need_reason_count = state.get("need_reason_count", 0)  # 이유 요청 횟수
+        unsure_count = state.get("unsure_count", 0)  # "왜 모르겠어?" 질문 횟수
 
-        logger.info(f"🔍 Stage 3 ENTRY - current_question_index: {current_question_index}, dont_know_count: {dont_know_count}")
+        logger.info(f"🔍 Stage 3 ENTRY - current_question_index: {current_question_index}, variation_index: {variation_index}, need_reason_count: {need_reason_count}, unsure_count: {unsure_count}")
 
-        # ✨ 바로 전 턴의 대화만 컨텍스트로 사용 (이전 턴 언급 방지!)
-        # 최근 2개 메시지만: 직전 assistant 발화 + 현재 user 발화
-        recent_messages = messages[-2:] if len(messages) >= 2 else messages
-
-        context_parts = []
-        for msg in recent_messages:
-            if msg['role'] == 'user':
-                context_parts.append(f"user: {msg['content']}")
-            elif msg['role'] == 'assistant':
-                # Assistant 메시지는 간단히 요약만 (질문 텍스트 제외)
-                context_parts.append(f"assistant: [이전 질문]")
-
-        context = "\n".join(context_parts)
+        # 최근 대화 컨텍스트
+        recent_messages = messages[-8:] if len(messages) > 8 else messages
+        context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in recent_messages])
 
         # 사용자의 최근 답변
         user_message = messages[-1]["content"] if messages else ""
         logger.info(f"🔍 User message: {user_message[:50]}...")
 
-        # ✨ 다음 질문 가져오기
-        next_topic_question = ""
-        if 0 <= current_question_index < len(self.ethics_topics):
-            question_data = self.ethics_topics[current_question_index]
-            next_topic_question = question_data.get("variations", [""])[0]
+        questions = self.ethics_topics.get("questions", [])
+        current_question_text = ""
+        if 0 <= current_question_index < len(questions):
+            variations = questions[current_question_index].get("variations", [])
+            current_question_text = variations[0] if variations else ""
 
-        # ✨ 사용자 의도 감지
-        intent = self.intent_detector.detect(
-            user_message,
-            current_question_index,
-            dont_know_count,
-            context=context,
-            next_topic_question=next_topic_question
-        )
-        logger.info(f"🔍 Intent detected: {intent}")
+        # ✨ 사용자 의도 감지 (이전 대화 컨텍스트 전달)
+        logger.info(f"🔍 [Stage3] Detecting intent for user message: '{user_message}'")
+        intent = self.intent_detector.detect(user_message, current_question=current_question_text, context=context)
+        is_asking_clarification = (intent == "clarification")
+        logger.info(f"🔍 [Stage3] Intent detected: {intent}, is_asking_clarification: {is_asking_clarification}")
 
         # 응답 생성 및 다음 질문 인덱스 설정
         next_question_index = current_question_index  # 기본값: 현재 질문 유지
         is_sufficient = False  # 기본값
-        response = ""
 
-        if intent == "ask_concept":
-            # 개념 설명 생성
-            response = self._handle_concept_explanation(user_message, current_question_index, context)
-            next_question_index = current_question_index  # 같은 질문 계속
+        if intent == "ask_opinion":
+            # 사용자가 에이전트에게 의견 질문 → "잘 모르겠다" 표현하고 질문 다시
+            response = self._handle_ask_opinion(user_message, current_question_index, context)
+            next_question_index = current_question_index  # 같은 질문 유지
             is_sufficient = False
-            logger.info(f"✅ User asked for concept explanation - staying on Q{current_question_index}")
-
+            logger.info(f"💬 [Stage3] User asked for agent's opinion - staying on Q{current_question_index}")
         elif intent == "ask_why_unsure":
-            # ✨ "글세", "모르겠어" 첫 번째 → "왜 모르겠어?" 질문
-            response = self._handle_ask_why_unsure(user_message, current_question_index, context)
-            next_question_index = current_question_index  # 같은 질문 계속
+            # ✨ "글세", "모르겠어", "어?", "?" → "왜 모르겠어?" 질문
+            # ⚠️ 최대 1번만! 이미 물어봤으면 다음 질문으로 넘어감
+            unsure_count = state.get("unsure_count", 0)
+            if unsure_count >= 1:
+                # 이미 한 번 "왜 모르겠어?" 물어봤으면 다음 질문으로 넘어감
+                logger.info(f"⚠️ [Stage3] Already asked why unsure once - moving to next question")
+                state["unsure_count"] = 0  # 리셋
+                state["variation_index"] = 0
+                is_sufficient = current_question_index >= 4
+                response, next_question_index = self.response_generator.generate_with_topic(
+                    is_sufficient=is_sufficient,
+                    context=context,
+                    user_message=user_message,
+                    answered_count=current_question_index + 1
+                )
+            else:
+                # 첫 번째 "왜 모르겠어?" 질문
+                response = self._handle_ask_why_unsure(user_message, current_question_index, context)
+                next_question_index = current_question_index  # 같은 질문 계속
+                is_sufficient = False
+                state["unsure_count"] = unsure_count + 1  # 카운터 증가
+                logger.info(f"⚠️ [Stage3] User is unsure - asking why (staying on Q{current_question_index})")
+        elif intent == "ask_concept":
+            # 사용자가 개념 질문 → 개념 설명 + 원래 질문 반복
+            response = self._handle_concept_explanation(user_message, current_question_index, context)
+            next_question_index = current_question_index  # 같은 질문 유지
             is_sufficient = False
-            state["dont_know_count"] = 1  # 모르겠다 카운터 증가
-            logger.info(f"⚠️ User is unsure - asking why (staying on Q{current_question_index})")
+            logger.info(f"✅ [Stage3] User asked for concept explanation - staying on Q{current_question_index}")
+        elif intent == "need_reason":
+            # ⚠️ 이유 요청은 최대 1번만! 이미 물어봤으면 다음 질문으로 넘어감
+            if need_reason_count >= 1:
+                # 이미 한 번 이유를 물어봤으면 다음 질문으로 넘어감
+                logger.info(f"⚠️ [Stage3] Already asked for reason once - treating as answer and moving on")
+                state["need_reason_count"] = 0  # 리셋
+                state["variation_index"] = 0
+                is_sufficient = current_question_index >= 4
+                response, next_question_index = self.response_generator.generate_with_topic(
+                    is_sufficient=is_sufficient,
+                    context=context,
+                    user_message=user_message,
+                    answered_count=current_question_index + 1
+                )
+            else:
+                # 첫 번째 이유 요청
+                response = self._handle_need_reason(user_message, current_question_index, context, current_question_text)
+                next_question_index = current_question_index
+                is_sufficient = False
+                state["need_reason_count"] = need_reason_count + 1  # 카운터 증가
+                logger.info(f"⚠️ [Stage3] Asking for reason (1st time) - staying on Q{current_question_index}")
+        elif is_asking_clarification:
+            # 사용자가 질문 이해 못함 → variations 배열에서 다음 변형 선택
+            # 변형 인덱스 증가
+            variation_index += 1
+            logger.info(f"⚠️ [Stage3] User needs clarification - using variation #{variation_index} for Q{current_question_index}")
 
-        elif intent in ("clarification", "dont_know_second"):
-            # 모르겠다 카운터 증가
-            dont_know_count += 1
-            MAX_DONT_KNOW = 2
-
-            # 두 번째 "모르겠다"면 즉시 상한에 도달시켜 다음 단계로 넘어갈 수 있도록 처리
-            if intent == "dont_know_second":
-                dont_know_count = max(dont_know_count, MAX_DONT_KNOW + 1)
-
-            # ✨ "모르겠다"를 최대 2번까지만 받고, 그 다음에는 다음 질문으로 넘어감
-            if dont_know_count > MAX_DONT_KNOW:
+            # ✨ variation을 최대 2번까지만 보여주고, 그 다음에는 다음 질문으로 넘어감
+            MAX_VARIATIONS = 2
+            if variation_index >= MAX_VARIATIONS:
                 # 2번 이상 모르겠다고 했으면 다음 질문으로 넘어감
-                logger.info(f"⚠️ Max dont_know ({MAX_DONT_KNOW}) reached - moving to next question")
-                state["dont_know_count"] = 0  # 리셋
+                logger.info(f"⚠️ [Stage3] Max variations ({MAX_VARIATIONS}) reached - moving to next question")
+                state["variation_index"] = 0  # 리셋
 
                 # 5개 질문 완료 여부 체크
                 is_sufficient = current_question_index >= 4
 
                 # 다음 질문으로 이동
-                response, next_question_index = self.response_generator.generate_with_index(
+                response, next_question_index = self.response_generator.generate_with_topic(
                     is_sufficient=is_sufficient,
                     context=context,
                     user_message=user_message,
-                    current_question_index=current_question_index
+                    answered_count=current_question_index + 1
                 )
-                logger.info(f"✅ Skipping to next question: Q{current_question_index} → Q{next_question_index}")
+                logger.info(f"✅ [Stage3] Skipping to next question: Q{current_question_index} → Q{next_question_index}")
             else:
                 # variation 질문 생성
-                response = self.clarification_generator.generate(
-                    user_message,
-                    current_question_index,
-                    context,
-                    dont_know_count
-                )
+                response = self.clarification_generator.generate(user_message, current_question_index, context, variation_index)
                 next_question_index = current_question_index  # 같은 질문 계속
-                is_sufficient = False
-                state["dont_know_count"] = dont_know_count
-                logger.info(
-                    f"⚠️ User needs clarification (intent={intent}, count: {dont_know_count}) - staying on Q{current_question_index}"
-                )
-
-        elif intent == "need_reason":
-            response = self._handle_need_reason(user_message, current_question_index, context)
-            next_question_index = current_question_index
-            is_sufficient = False
-            logger.info(f"⚠️ User gave opinion without reason - asking follow-up on Q{current_question_index}")
-
-        elif intent == "unrelated":
-            # 무관한 응답 → 게임 설정에 맞게 답하고 질문 다시
-            response = self._handle_unrelated(user_message, current_question_index, context)
-            next_question_index = current_question_index  # 같은 질문 계속
-            is_sufficient = False
-            logger.info(f"⚠️ User gave unrelated response - staying on Q{current_question_index}")
-
-        elif intent == "ask_opinion":
-            # 의견을 물어봄 → "잘 모르겠다" 표현하고 질문 다시
-            response = self._handle_ask_opinion(user_message, current_question_index, context)
-            next_question_index = current_question_index  # 같은 질문 계속
-            is_sufficient = False
-            logger.info(f"⚠️ User asked for opinion - staying on Q{current_question_index}")
-
+                is_sufficient = False  # 아직 끝나지 않음
+                state["variation_index"] = variation_index
+                logger.info(f"⚠️ [Stage3] Keeping same question: current_question_index={current_question_index}, next_question_index={next_question_index}")
         elif intent == "ask_explanation":
             # ✨ 에이전트가 한 말에 대해 "왜?"라고 설명 요청
             response = self._handle_ask_explanation(user_message, current_question_index, context)
             next_question_index = current_question_index  # 같은 질문 계속
             is_sufficient = False
-            logger.info(f"💡 User asked for explanation - staying on Q{current_question_index}")
-
+            logger.info(f"💡 [Stage3] User asked for explanation - staying on Q{current_question_index}")
         else:
-            # answer: 일반 대답 → 다음 질문으로
-            logger.info(f"✅ User answered question #{current_question_index}")
+            # 일반 대답 → 다음 질문으로
+            logger.info(f"✅ [Stage3] User answered question #{current_question_index} (Q{current_question_index + 1}/5)")
 
-            # 모르겠다 카운터 리셋 (답변을 했으므로)
-            state["dont_know_count"] = 0
+            # 변형 인덱스 및 카운터 리셋 (답변을 했으므로)
+            state["variation_index"] = 0
+            state["need_reason_count"] = 0
+            state["unsure_count"] = 0
 
             # 5가지 질문을 모두 했는지 체크
             is_sufficient = current_question_index >= 4  # 0~4 = 5개
-            logger.info(f"🔍 Question progress: {current_question_index + 1}/5 questions asked")
+            logger.info(f"🔍 [Stage3] Question progress: {current_question_index + 1}/5 questions asked, is_sufficient={is_sufficient}")
 
             # 다음 질문 또는 마무리
-            response, next_question_index = self.response_generator.generate_with_index(
+            logger.info(f"🔍 [Stage3] Calling response_generator with answered_count={current_question_index + 1}")
+            response, next_question_index = self.response_generator.generate_with_topic(
                 is_sufficient=is_sufficient,
                 context=context,
                 user_message=user_message,
-                current_question_index=current_question_index
+                answered_count=current_question_index + 1
             )
+            logger.info(f"✅ [Stage3] Moving to next question: current_question_index={current_question_index} → next_question_index={next_question_index}")
 
 
         state["stage"] = "stage3"
@@ -217,148 +210,80 @@ class Stage3Handler:
         state["messages"].append({"role": "assistant", "content": response})
         state["message_count"] = state.get("message_count", 0) + 1
 
+        logger.info(f"🔍 [Stage3] FINAL STATE - current_question_index={next_question_index}, should_end={is_sufficient}, variation_index={state.get('variation_index', 0)}")
+        logger.info(f"🔍 [Stage3] Response: {response[:100]}...")
+
         return state
-
-    def _handle_unrelated(self, user_message: str, question_index: int, context: str) -> str:
-        """
-        무관한 응답 처리 → 게임 설정에 맞게 답하고 질문 다시
-
-        Args:
-            user_message: 사용자 메시지
-            question_index: 현재 질문 인덱스
-            context: 대화 컨텍스트
-
-        Returns:
-            게임 설정에 맞는 답변 + 질문 재시도
-        """
-        if 0 <= question_index < len(self.ethics_topics):
-            question_data = self.ethics_topics[question_index]
-            original_question = question_data.get("variations", [""])[0]
-        else:
-            original_question = "이 부분에 대해 어떻게 생각하세요?"
-
-        # ✨ 프롬프트 파일에서 로드
-        prompt_template = self.prompts.get("stage3_unrelated", "")
-
-        # 프롬프트 포맷팅
-        prompt = format_prompt(
-            prompt_template,
-            persona_prompt=self.persona_prompt,
-            context=context,
-            user_message=user_message,
-            original_question=original_question
-        )
-
-        result = self.llm.invoke(prompt)
-        return result.content.strip().strip('"')
-
-    def _handle_need_reason(self, user_message: str, question_index: int, context: str) -> str:
-        """
-        근거 없이 입장만 말했을 때 후속 질문으로 이유를 요청
-        """
-        if 0 <= question_index < len(self.ethics_topics):
-            question_data = self.ethics_topics[question_index]
-            original_question = question_data.get("variations", [""])[0]
-        else:
-            original_question = "이 부분에 대해 어떻게 생각해?"
-
-        prompt_template = self.prompts.get("stage3_request_reason", "")
-        prompt = format_prompt(
-            prompt_template,
-            persona_prompt=self.persona_prompt,
-            context=context,
-            user_message=user_message,
-            original_question=original_question
-        )
-
-        result = self.llm.invoke(prompt)
-        return result.content.strip().strip('"')
-
-    def _handle_ask_why_unsure(self, user_message: str, question_index: int, context: str) -> str:
-        """
-        "글세", "모르겠어" 처리 → "왜 모르겠어?" 질문
-
-        Args:
-            user_message: 사용자 메시지 (예: "글세...", "모르겠어")
-            question_index: 현재 질문 인덱스
-            context: 대화 컨텍스트
-
-        Returns:
-            "왜 모르겠어?" 질문
-        """
-        if 0 <= question_index < len(self.ethics_topics):
-            question_data = self.ethics_topics[question_index]
-            original_question = question_data.get("variations", [""])[0]
-        else:
-            original_question = "이 부분에 대해 어떻게 생각해?"
-
-        prompt_template = self.prompts.get("stage3_ask_why_unsure", "")
-        prompt = format_prompt(
-            prompt_template,
-            persona_prompt=self.persona_prompt,
-            context=context,
-            user_message=user_message,
-            original_question=original_question
-        )
-
-        result = self.llm.invoke(prompt)
-        return result.content.strip().strip('"')
-
-    def _handle_ask_opinion(self, user_message: str, question_index: int, context: str) -> str:
-        """
-        의견 물어봄 처리 → "잘 모르겠다" 표현하고 질문 다시
-
-        Args:
-            user_message: 사용자 메시지
-            question_index: 현재 질문 인덱스
-            context: 대화 컨텍스트
-
-        Returns:
-            "잘 모르겠다" 표현 + 질문 재시도
-        """
-        if 0 <= question_index < len(self.ethics_topics):
-            question_data = self.ethics_topics[question_index]
-            original_question = question_data.get("variations", [""])[0]
-        else:
-            original_question = "이 부분에 대해 어떻게 생각하세요?"
-
-        # ✨ 프롬프트 파일에서 로드
-        prompt_template = self.prompts.get("stage3_ask_opinion", "")
-
-        # 프롬프트 포맷팅
-        prompt = format_prompt(
-            prompt_template,
-            persona_prompt=self.persona_prompt,
-            context=context,
-            user_message=user_message,
-            original_question=original_question
-        )
-
-        result = self.llm.invoke(prompt)
-        return result.content.strip().strip('"')
 
     def _handle_concept_explanation(self, user_message: str, question_index: int, context: str) -> str:
         """
         개념 설명 요청 처리 → 개념 설명 + 원래 질문 반복
-
-        Args:
-            user_message: 사용자 메시지 (예: "자율성이 뭐야?")
-            question_index: 현재 질문 인덱스
-            context: 대화 컨텍스트
-
-        Returns:
-            개념 설명 + 원래 질문
         """
-        if 0 <= question_index < len(self.ethics_topics):
-            question_data = self.ethics_topics[question_index]
-            original_question = question_data.get("variations", [""])[0]
+        from utils import format_prompt
+
+        questions = self.ethics_topics.get("questions", [])
+        if question_index >= len(questions):
+            logger.error(f"❌ Invalid question_index: {question_index}")
+            return "미안, 질문을 찾을 수 없어."
+
+        current_question_data = questions[question_index]
+        original_question = current_question_data.get("question", "")
+        if not original_question:
+            variations = current_question_data.get("variations", [])
+            original_question = variations[0] if variations else "이 부분에 대해 어떻게 생각해?"
+
+        concept_prompt = format_prompt(
+            self.prompts.get("stage3_concept_explanation", ""),
+            user_message=user_message,
+            original_question=original_question
+        )
+
+        try:
+            result = self.llm.invoke(concept_prompt)
+            response = result.content.strip()
+            logger.info(f"✅ [Stage3] Generated concept explanation for: {user_message[:30]}...")
+            return response
+        except Exception as e:
+            logger.error(f"❌ Error generating concept explanation: {e}")
+            return f"미안, 설명하는 데 문제가 있었어. 다시 질문해줄래? {original_question}"
+
+    def _handle_need_reason(self, user_message: str, question_index: int, context: str, current_question: str) -> str:
+        """
+        사용자가 이유 없이 입장만 말했을 때 후속 질문을 생성
+        """
+        from utils import format_prompt
+
+        prompt = format_prompt(
+            self.prompts.get("stage3_request_reason", ""),
+            persona_prompt=self.persona_prompt,
+            context=context,
+            user_message=user_message,
+            current_question=current_question or "왜 그렇게 느껴?"
+        )
+
+        try:
+            result = self.llm.invoke(prompt)
+            return result.content.strip()
+        except Exception as e:
+            logger.error(f"❌ Error generating reason follow-up: {e}")
+            return "그렇구나. 근데 왜 그렇게 생각해?"
+
+    def _handle_ask_opinion(self, user_message: str, question_index: int, context: str) -> str:
+        """
+        의견 요청 처리 → "잘 모르겠다" 표현하고 질문 다시
+        """
+        from utils import format_prompt
+
+        questions = self.ethics_topics.get("questions", [])
+        if 0 <= question_index < len(questions):
+            current_question_data = questions[question_index]
+            variations = current_question_data.get("variations", [])
+            original_question = variations[0] if variations else "이 부분에 대해 어떻게 생각해?"
         else:
-            original_question = "이 부분에 대해 어떻게 생각하세요?"
+            original_question = "이 부분에 대해 어떻게 생각해?"
 
-        # ✨ 프롬프트 파일에서 로드
-        prompt_template = self.prompts.get("stage3_concept_explanation", "")
+        prompt_template = self.prompts.get("stage3_ask_opinion", "")
 
-        # 프롬프트 포맷팅
         prompt = format_prompt(
             prompt_template,
             persona_prompt=self.persona_prompt,
@@ -367,31 +292,64 @@ class Stage3Handler:
             original_question=original_question
         )
 
-        result = self.llm.invoke(prompt)
-        return result.content.strip().strip('"')
+        try:
+            result = self.llm.invoke(prompt)
+            return result.content.strip().strip('"')
+        except Exception as e:
+            logger.error(f"❌ Error generating ask_opinion response: {e}")
+            return f"나도 잘 모르겠어, 그래서 물어보는 거야. {original_question}"
+
+    def _handle_ask_why_unsure(self, user_message: str, question_index: int, context: str) -> str:
+        """
+        "글세", "모르겠어", "어?", "?" 처리 → "왜 모르겠어?" 질문
+        """
+        from utils import format_prompt
+
+        questions = self.ethics_topics.get("questions", [])
+        if 0 <= question_index < len(questions):
+            current_question_data = questions[question_index]
+            variations = current_question_data.get("variations", [])
+            original_question = variations[0] if variations else "이 부분에 대해 어떻게 생각해?"
+        else:
+            original_question = "이 부분에 대해 어떻게 생각해?"
+
+        prompt_template = self.prompts.get("stage3_ask_why_unsure", "")
+        if not prompt_template:
+            return f"아직 잘 모르겠구나. 어떤 부분이 헷갈려?"
+
+        prompt = format_prompt(
+            prompt_template,
+            persona_prompt=self.persona_prompt,
+            context=context,
+            user_message=user_message,
+            original_question=original_question
+        )
+
+        try:
+            result = self.llm.invoke(prompt)
+            response = result.content.strip().strip('"')
+            logger.info(f"✅ [Stage3] Generated ask_why_unsure response for: {user_message[:30]}...")
+            return response
+        except Exception as e:
+            logger.error(f"❌ Error generating ask_why_unsure response: {e}")
+            return f"아직 잘 모르겠구나. 어떤 부분이 헷갈려?"
 
     def _handle_ask_explanation(self, user_message: str, question_index: int, context: str) -> str:
         """
         에이전트가 한 말에 대해 "왜?"라고 설명 요청 처리
-
-        Args:
-            user_message: 사용자 메시지 (예: "왜 못물어?", "왜 그래?")
-            question_index: 현재 질문 인덱스
-            context: 대화 컨텍스트
-
-        Returns:
-            설명 + 질문
         """
-        if 0 <= question_index < len(self.ethics_topics):
-            question_data = self.ethics_topics[question_index]
-            original_question = question_data.get("variations", [""])[0]
+        from utils import format_prompt
+
+        questions = self.ethics_topics.get("questions", [])
+        if 0 <= question_index < len(questions):
+            current_question_data = questions[question_index]
+            variations = current_question_data.get("variations", [])
+            original_question = variations[0] if variations else "이 부분에 대해 어떻게 생각해?"
         else:
             original_question = "이 부분에 대해 어떻게 생각해?"
 
-        # ✨ 프롬프트 파일에서 로드
         prompt_template = self.prompts.get("stage3_explain_reasoning", "")
 
-        # 프롬프트 포맷팅
         prompt = format_prompt(
             prompt_template,
             persona_prompt=self.persona_prompt,
@@ -400,5 +358,9 @@ class Stage3Handler:
             original_question=original_question
         )
 
-        result = self.llm.invoke(prompt)
-        return result.content.strip().strip('"')
+        try:
+            result = self.llm.invoke(prompt)
+            return result.content.strip().strip('"')
+        except Exception as e:
+            logger.error(f"❌ Error generating ask_explanation response: {e}")
+            return f"그런 질문을 한 건 여러 관점이 있어서야. 넌 어떻게 생각해?"

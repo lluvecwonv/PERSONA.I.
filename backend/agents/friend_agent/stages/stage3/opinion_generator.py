@@ -13,12 +13,12 @@ from utils import format_prompt
 class OpinionGenerator:
     """AI 의견 답변 생성 클래스"""
 
-    def __init__(self, llm: ChatOpenAI, prompts: dict, ethics_topics: list, persona_prompt: str):
+    def __init__(self, llm: ChatOpenAI, prompts: dict, ethics_topics: dict, persona_prompt: str):
         """
         Args:
             llm: 응답 생성용 LLM
             prompts: 프롬프트 딕셔너리
-            ethics_topics: 질문 배열 (단순 리스트)
+            ethics_topics: 윤리 주제 딕셔너리
             persona_prompt: 페르소나 프롬프트
         """
         self.llm = llm
