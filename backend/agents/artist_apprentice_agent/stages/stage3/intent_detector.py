@@ -1,12 +1,9 @@
-"""
-사용자 의도 감지 모듈
-"""
+"""Stage 3 intent detection: classify user response to ethics questions."""
 import logging
 from langchain_openai import ChatOpenAI
 import sys
 from pathlib import Path
 
-# utils.py 임포트
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 from utils import format_prompt
 
@@ -14,123 +11,46 @@ logger = logging.getLogger(__name__)
 
 _QUESTION_CHARS = ("?", "？")
 _REASON_KEYWORDS_STRICT = (
-    "왜냐하면",
-    "왜냐면",
-    "왜냐하",
-    "그덕분에",
-    "덕분에",
-    "덕분이라",
-    "덕분이야",
-    "덕분이지",
+    "왜냐하면", "왜냐면", "왜냐하",
+    "그덕분에", "덕분에", "덕분이라", "덕분이야", "덕분이지",
 )
 _REASON_KEYWORDS_ALLOW_TRAILING = (
-    "기때문에",
-    "것때문에",
-    "거때문에",
-    "걸때문에",
-    "땜에",
-    "때문이라",
-    "때문이라서",
-    "때문이야",
-    "때문이지",
-    "때문인걸",
-    "때문인거야",
-    "때문일걸",
-    "때문일거야",
-    "때문탓에",
-    "탓에",
-    "거라서",
-    "거니까",
-    "거거든",
-    "거거든요",
-    # ✨ 추가: ~니까, ~라서, ~해서 패턴
-    "니까",
-    "으니까",
-    "이니까",
-    "라서",
-    "이라서",
-    "해서",
-    "아서",
-    "어서",
-    "잖아",
-    "거든",
+    "기때문에", "것때문에", "거때문에", "걸때문에", "땜에",
+    "때문이라", "때문이라서", "때문이야", "때문이지",
+    "때문인걸", "때문인거야", "때문일걸", "때문일거야",
+    "때문탓에", "탓에", "거라서", "거니까", "거거든", "거거든요",
+    "니까", "으니까", "이니까", "라서", "이라서",
+    "해서", "아서", "어서", "잖아", "거든",
 )
 _REASON_KEYWORDS_NEED_FOLLOW = (
-    "그래서",
-    "그러니까",
-    "그렇다보니",
-    "그렇다보니까",
-    "그렇기때문에",
+    "그래서", "그러니까", "그렇다보니", "그렇다보니까", "그렇기때문에",
 )
 _EN_REASON_KEYWORDS = (
-    "because",
-    "since",
-    "so that",
-    "that's why",
-    "due to",
+    "because", "since", "so that", "that's why", "due to",
 )
 _QUESTION_PREFIXES_NEAR_REASON = (
-    "무슨",
-    "뭐",
-    "어떤",
-    "누가",
-    "누구",
-    "어디",
+    "무슨", "뭐", "어떤", "누가", "누구", "어디",
 )
 
-# ✨ dont_know 패턴 (답을 모르겠음) - "왜 모르겠어?" 질문을 위해
+# Typo variants included intentionally
 _DONT_KNOW_PATTERNS = (
-    "모르겠어",
-    "모르겟어",  # 오타 변형
-    "모르겠어요",
-    "잘 모르겠어",
-    "잘모르겠어",
-    "잘 모르겠어요",
-    "잘모르겠어요",
-    "글쎄",
-    "글세",  # 오타 변형
-    "글쎄요",
-    "몰라",
-    "모르겠는데",
-    "모르겟는데",  # 오타 변형
-    "생각이 안 나",
-    "생각안나",
-    "어?",  # 짧은 혼란 표현
-    "?",  # 단독 물음표
+    "모르겠어", "모르겟어", "모르겠어요",
+    "잘 모르겠어", "잘모르겠어", "잘 모르겠어요", "잘모르겠어요",
+    "글쎄", "글세", "글쎄요", "몰라",
+    "모르겠는데", "모르겟는데",
+    "생각이 안 나", "생각안나",
+    "어?", "?",
 )
 
 
 class IntentDetector:
-    """사용자 의도 감지 클래스"""
-
     def __init__(self, analyzer: ChatOpenAI, prompts: dict):
-        """
-        Args:
-            analyzer: 의도 분석용 LLM (temperature=0)
-            prompts: 프롬프트 딕셔너리
-        """
         self.analyzer = analyzer
         self.prompts = prompts
 
     def detect(self, user_message: str, current_question: str = "", context: str = "") -> str:
-        """
-        사용자가 질문을 이해했는지 판단 (100% LLM 기반)
-
-        Args:
-            user_message: 사용자 메시지
-            current_question: 현재 질문
-            context: 최근 대화 히스토리
-
-        Returns:
-            의도:
-            - "answer": 질문에 대한 답변 (이유 포함)
-            - "need_reason": 의견만 있고 이유 없음 → "왜 그렇게 생각하세요?" 질문
-            - "ask_concept": 개념 설명 요청 (예: "자율성이 뭐야?")
-            - "clarification": 질문 이해 못함
-            - "ask_why_unsure": 모르겠다고 함 → "왜 모르겠어?" 질문
-            - "ask_opinion": 에이전트에게 의견 질문
-        """
-        # ✨ 모든 의도 분류는 LLM이 담당 (휴리스틱 제거)
+        """LLM-based intent classification. Returns one of: answer, need_reason,
+        ask_concept, clarification, ask_why_unsure, ask_opinion, ask_explanation."""
         intent_prompt = format_prompt(
             self.prompts.get("detect_intent", ""),
             user_message=user_message,
@@ -139,52 +59,45 @@ class IntentDetector:
         )
 
         try:
-            logger.info(f"🔍 [Intent Detection] User message: '{user_message}'")
-            logger.info(f"🔍 [Intent Detection] Prompt length: {len(intent_prompt)} chars")
+            logger.info(f"[Intent Detection] User: '{user_message}', prompt_len: {len(intent_prompt)}")
 
             result = self.analyzer.invoke(intent_prompt)
             intent = result.content.strip().lower()
 
-            logger.info(f"🔍 [Intent Detection] LLM raw response: '{intent}'")
+            logger.info(f"[Intent Detection] LLM response: '{intent}'")
 
-            # 의도 분류
             if "ask_opinion" in intent:
-                logger.info(f"🔍 [Intent Detection] 💬 RESULT: ask_opinion (user asks for agent's opinion)")
+                logger.info(f"[Intent Detection] -> ask_opinion")
                 return "ask_opinion"
             elif "ask_concept" in intent:
-                logger.info(f"🔍 [Intent Detection] 📚 RESULT: ask_concept (will explain concept)")
+                logger.info(f"[Intent Detection] -> ask_concept")
                 return "ask_concept"
             elif "need_reason" in intent:
+                # Override if user already provided reasoning markers
                 if self._contains_reason_statement(user_message):
-                    logger.info(
-                        "🔍 [Intent Detection] need_reason flagged but reasoning markers detected → override to answer"
-                    )
+                    logger.info("[Intent Detection] need_reason overridden -> answer (reasoning markers found)")
                     return "answer"
-                logger.info("🔍 [Intent Detection] 🔁 RESULT: need_reason (ask for reasoning)")
+                logger.info("[Intent Detection] -> need_reason")
                 return "need_reason"
             elif "dont_know" in intent or "dont know" in intent:
-                # ✨ "모르겠어" 같은 불확실한 응답 → "왜 모르겠어?" 질문
-                logger.info(f"🔍 [Intent Detection] ⚠️ RESULT: ask_why_unsure (user is unsure)")
+                logger.info(f"[Intent Detection] -> ask_why_unsure")
                 return "ask_why_unsure"
             elif "clarification" in intent:
-                logger.info(f"🔍 [Intent Detection] ❌ RESULT: clarification (will repeat question)")
+                logger.info(f"[Intent Detection] -> clarification")
                 return "clarification"
             elif "ask_explanation" in intent:
-                logger.info(f"🔍 [Intent Detection] 💡 RESULT: ask_explanation (user asks why)")
+                logger.info(f"[Intent Detection] -> ask_explanation")
                 return "ask_explanation"
             else:
-                # 모든 일반 답변은 "answer"로 처리
-                logger.info(f"🔍 [Intent Detection] ✅ RESULT: answer (will move to next question)")
+                logger.info(f"[Intent Detection] -> answer (default)")
                 return "answer"
         except Exception as e:
-            logger.error(f"❌ Intent detection error: {e}")
-            return "answer"  # 기본값: 다음 질문으로
+            logger.error(f"Intent detection error: {e}")
+            return "answer"
 
     @staticmethod
     def _contains_reason_statement(text: str) -> bool:
-        """
-        간단한 휴리스틱: 사용자가 이미 이유를 설명했으면 need_reason 분기를 막는다.
-        """
+        """Heuristic check: returns True if user already provided reasoning."""
         if not text:
             return False
 
@@ -219,7 +132,7 @@ class IntentDetector:
 
     @staticmethod
     def _matches_plain_ttaemun_reason(normalized: str) -> bool:
-        """'~ 때문에' 패턴을 탐지하되 의문사 근처에서는 제외한다."""
+        """Detect '~ 때문에' pattern but exclude when near interrogative prefixes."""
         keyword = "때문에"
         start = 0
         while True:

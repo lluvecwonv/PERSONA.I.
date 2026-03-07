@@ -1,6 +1,4 @@
-"""
-Stage 2 모듈 - AI 예술 입장 질문
-"""
+"""Stage 2 sub-modules."""
 from .acknowledgment_generator import AcknowledgmentGenerator
 from .first_question_generator import FirstQuestionGenerator
 from .rephrase_question_generator import RephraseQuestionGenerator

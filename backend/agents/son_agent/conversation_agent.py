@@ -1,11 +1,11 @@
 """
-Son Agent (아들 - 책임 중심 관점, AI 복원 찬성)
-LangChain 기반 대화 에이전트
-✨ Three-Phase Architecture: Basic Reflection → SPT Planner (조건부) → Response
+Son Agent - responsibility-centered stance, pro-AI resurrection.
+Three-Phase Architecture: Basic Reflection -> SPT Planner (conditional) -> Response
 """
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 import logging
+import re
 import sys
 import os
 import json
@@ -15,7 +15,6 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_community.chat_message_histories import ChatMessageHistory
 
-# Gemini 지원 (선택적)
 try:
     from langchain_google_genai import ChatGoogleGenerativeAI
     HAS_GEMINI = True
@@ -30,7 +29,6 @@ logger = logging.getLogger(__name__)
 
 
 def _load_reflection_prompt() -> str:
-    """Load basic reflection prompt (Step 1, 2 only)"""
     prompt_path = Path(__file__).parent / "prompts" / "reflection_prompt.txt"
     try:
         with open(prompt_path, "r", encoding="utf-8") as f:
@@ -41,7 +39,6 @@ def _load_reflection_prompt() -> str:
 
 
 def _load_spt_planner_prompt() -> str:
-    """Load SPT planner prompt (Step 3 - 5 questions)"""
     prompt_path = Path(__file__).parent / "prompts" / "spt_planner_prompt.txt"
     try:
         with open(prompt_path, "r", encoding="utf-8") as f:
@@ -52,7 +49,6 @@ def _load_spt_planner_prompt() -> str:
 
 
 def _load_response_prompt() -> str:
-    """Load response generation prompt (Phase 2)"""
     prompt_path = Path(__file__).parent / "prompts" / "response_prompt.txt"
     try:
         with open(prompt_path, "r", encoding="utf-8") as f:
@@ -63,73 +59,52 @@ def _load_response_prompt() -> str:
 
 
 class SonAgent:
-    """
-    아들 대화 에이전트 (AI 복원 찬성 - 책임 중심 관점)
-    - LangChain ChatOpenAI 사용
-    - 20대 초반 남성 아들 캐릭터
-    - ✨ Three-Phase: Basic Reflection → SPT Planner (조건부) → Response
-    - 아버지에게 존댓말 사용
-    """
 
     def __init__(
         self,
         api_key: str,
         model: str = "gpt-4o",
-        spt_agent_v2: Optional[Any] = None  # 하위 호환성 유지, 사용하지 않음
     ):
-        """
-        Args:
-            api_key: OpenAI API key
-            model: 모델 ID
-            spt_agent_v2: (deprecated) 하위 호환성을 위해 유지, 사용되지 않음
-        """
         self.api_key = api_key
         self.model = model
         self.google_api_key = os.getenv("GOOGLE_API_KEY", "")
 
         self.session_store: Dict[str, ChatMessageHistory] = {}
 
-        # Reflection Prompt 로드 (Step 1, 2)
         self.reflection_prompt = _load_reflection_prompt()
         if self.reflection_prompt:
-            logger.info("✅ Reflection prompt loaded successfully")
+            logger.info("Reflection prompt loaded successfully")
 
-        # SPT Planner Prompt 로드 (Step 3)
         self.spt_planner_prompt = _load_spt_planner_prompt()
         if self.spt_planner_prompt:
-            logger.info("✅ SPT Planner prompt loaded successfully")
+            logger.info("SPT Planner prompt loaded successfully")
 
-        # Response Prompt 로드 (Phase 2)
         self.response_prompt = _load_response_prompt()
         if self.response_prompt:
-            logger.info("✅ Response prompt loaded successfully")
+            logger.info("Response prompt loaded successfully")
 
-        # ✨ Phase 2 응답용 GPT-4o LLM 설정
         self.response_llm = ChatOpenAI(
             model="gpt-4o",
             api_key=self.api_key,
             temperature=0.7,
             max_tokens=300
         )
-        logger.info("✅ [Son] Using Gemini 2.5 Flash for Phase 1 & 1.5, GPT-4o for Phase 2")
+        logger.info("[Son] Using Gemini 2.5 Flash for Phase 1 & 1.5, GPT-4o for Phase 2")
 
     def get_session_history(self, session_id: str) -> BaseChatMessageHistory:
-        """세션별 히스토리 가져오기 (없으면 생성)"""
         if session_id not in self.session_store:
             self.session_store[session_id] = ChatMessageHistory()
-            logger.info(f"✅ [Son] Created new session: {session_id}")
+            logger.info(f"[Son] Created new session: {session_id}")
         return self.session_store[session_id]
 
     def clear_session(self, session_id: str) -> bool:
-        """세션 히스토리 삭제"""
         if session_id in self.session_store:
             del self.session_store[session_id]
-            logger.info(f"✅ [Son] Cleared session: {session_id}")
+            logger.info(f"[Son] Cleared session: {session_id}")
             return True
         return False
 
     def _format_history(self, messages: List[Dict[str, str]], limit: int = 14) -> str:
-        """대화 히스토리를 텍스트로 포맷팅"""
         if not messages:
             return "(No previous conversation)"
 
@@ -145,9 +120,8 @@ class SonAgent:
         return "\n".join(lines) if lines else "(No previous conversation)"
 
     def _parse_json_response(self, text: str) -> Dict[str, Any]:
-        """LLM 응답에서 JSON 파싱 (truncation 대응 포함)"""
+        """Parse JSON from LLM response, with fallback for truncated output."""
         try:
-            # ```json ... ``` 블록 제거
             if "```json" in text:
                 text = text.split("```json")[1].split("```")[0]
             elif "```" in text:
@@ -155,37 +129,28 @@ class SonAgent:
             return json.loads(text.strip())
         except json.JSONDecodeError as e:
             logger.warning(f"JSON parsing error: {e}")
-            # Truncated JSON 복구 시도 - 부분 데이터 추출
             result = {}
-            import re
-
-            # strategic_question 추출 시도
             sq_match = re.search(r'"strategic_question"\s*:\s*"([^"]+)"', text)
             if sq_match:
                 result["strategic_question"] = sq_match.group(1)
 
-            # stakeholders 추출 시도
             st_match = re.search(r'"stakeholders"\s*:\s*\[([^\]]+)\]', text)
             if st_match:
                 stakeholders = re.findall(r'"([^"]+)"', st_match.group(1))
                 result["stakeholders"] = stakeholders
 
-            # blind_spot 추출 시도
             bs_match = re.search(r'"blind_spot"\s*:\s*"([^"]+)"', text)
             if bs_match:
                 result["blind_spot"] = bs_match.group(1)
 
-            # spt_required 추출 시도
             spt_match = re.search(r'"spt_required"\s*:\s*(true|false)', text, re.IGNORECASE)
             if spt_match:
                 result["spt_required"] = spt_match.group(1).lower() == "true"
 
-            # context_analysis 추출 시도
             ca_match = re.search(r'"context_analysis"\s*:\s*"([^"]+)"', text)
             if ca_match:
                 result["context_analysis"] = ca_match.group(1)
 
-            # user_utterance_type 추출 시도
             ut_match = re.search(r'"user_utterance_type"\s*:\s*"([^"]+)"', text)
             if ut_match:
                 result["user_utterance_type"] = ut_match.group(1)
@@ -206,11 +171,8 @@ class SonAgent:
         last_user_msg: str,
         session_id: str
     ) -> Dict[str, Any]:
-        """
-        Phase 1: Basic Reflection - SPT 필요 여부만 판단
-        Returns: { spt_required: bool, context_analysis: str, user_utterance_type: str }
-        """
-        logger.info(f"🧠 [PHASE1_START] session_id={session_id}, Performing basic reflection...")
+        """Phase 1: Determine whether SPT planning is needed."""
+        logger.info(f"[PHASE1_START] session_id={session_id}, Performing basic reflection...")
 
         history_text = self._format_history(messages)
 
@@ -220,7 +182,6 @@ class SonAgent:
         )
 
         try:
-            # ✨ Phase 1: Gemini 2.5 Flash 사용
             reflection_llm = ChatGoogleGenerativeAI(
                 model="gemini-2.5-flash",
                 google_api_key=self.google_api_key,
@@ -233,17 +194,16 @@ class SonAgent:
             ])
 
             reflection_text = result.content.strip()
-            logger.info(f"🧠 [PHASE1_OUTPUT] {reflection_text}")
+            logger.info(f"[PHASE1_OUTPUT] {reflection_text}")
 
-            # JSON 파싱
             parsed = self._parse_json_response(reflection_text)
 
             spt_required = parsed.get("spt_required", False)
             context_analysis = parsed.get("context_analysis", "")
             user_utterance_type = parsed.get("user_utterance_type", "Question")
 
-            logger.info(f"🧠 [SPT_REQUIRED] {spt_required}")
-            logger.info(f"🧠 [PHASE1_COMPLETE] Basic reflection done")
+            logger.info(f"[SPT_REQUIRED] {spt_required}")
+            logger.info(f"[PHASE1_COMPLETE] Basic reflection done")
 
             return {
                 "spt_required": spt_required,
@@ -252,7 +212,7 @@ class SonAgent:
             }
 
         except Exception as e:
-            logger.error(f"🧠 [PHASE1_ERROR] {e}")
+            logger.error(f"[PHASE1_ERROR] {e}")
             return {
                 "spt_required": False,
                 "context_analysis": "Reflection failed",
@@ -265,11 +225,8 @@ class SonAgent:
         last_user_msg: str,
         session_id: str
     ) -> Dict[str, Any]:
-        """
-        Phase 1.5: SPT Planner - 5개 질문 수행 (SPT=YES일 때만 호출)
-        Returns: { stakeholders, empathy_analysis, stance_alignment, blind_spot, strategic_question }
-        """
-        logger.info(f"🎯 [SPT_PLANNER_START] session_id={session_id}, Performing SPT planning...")
+        """Phase 1.5: Run SPT planner (only called when spt_required=True)."""
+        logger.info(f"[SPT_PLANNER_START] session_id={session_id}, Performing SPT planning...")
 
         history_text = self._format_history(messages)
 
@@ -279,7 +236,7 @@ class SonAgent:
         )
 
         try:
-            # ✨ Phase 1.5: GPT-4o 사용 (truncation 방지)
+            # GPT-4o to avoid truncation
             spt_llm = ChatOpenAI(
                 model="gpt-4o",
                 api_key=self.api_key,
@@ -292,19 +249,17 @@ class SonAgent:
             ])
 
             spt_text = result.content.strip()
-            logger.info(f"🎯 [SPT_PLANNER_OUTPUT] {spt_text}")
+            logger.info(f"[SPT_PLANNER_OUTPUT] {spt_text}")
 
-            # JSON 파싱
             parsed = self._parse_json_response(spt_text)
 
             strategic_question = parsed.get("strategic_question", "")
             stakeholders = parsed.get("stakeholders", [])
             blind_spot = parsed.get("blind_spot", "")
 
-            logger.info(f"🎯 [STRATEGIC_QUESTION] {strategic_question}")
-            logger.info(f"🎯 [SPT_PLANNER_COMPLETE] SPT planning done")
+            logger.info(f"[STRATEGIC_QUESTION] {strategic_question}")
+            logger.info(f"[SPT_PLANNER_COMPLETE] SPT planning done")
 
-            # Phase 2용 포맷팅된 섹션 생성
             formatted_section = ""
             if strategic_question:
                 formatted_section = f"""=== SPT ANALYSIS (MUST USE) ===
@@ -325,7 +280,7 @@ class SonAgent:
             }
 
         except Exception as e:
-            logger.error(f"🎯 [SPT_PLANNER_ERROR] {e}")
+            logger.error(f"[SPT_PLANNER_ERROR] {e}")
             return {
                 "stakeholders": [],
                 "empathy_analysis": "",
@@ -336,12 +291,12 @@ class SonAgent:
             }
 
     def _create_llm(self, max_tokens: int, streaming: bool, temperature: float = 0.7) -> ChatOpenAI:
-        """LLM 인스턴스 생성"""
         kwargs = {
             "model": self.model,
             "api_key": self.api_key,
             "streaming": streaming,
         }
+        # gpt-5 only supports temperature=1 and uses max_completion_tokens
         if "gpt-5" in self.model:
             kwargs["temperature"] = 1.0
             if max_tokens:
@@ -358,12 +313,8 @@ class SonAgent:
         spt_result: Optional[Dict[str, Any]],
         messages: List[Dict[str, str]]
     ) -> str:
-        """Phase 2용 응답 생성 프롬프트 구성"""
 
-        # SPT 섹션은 SPT Planner에서 이미 포맷팅됨
         spt_section = spt_result.get("formatted_section", "") if spt_result else ""
-
-        # 대화 히스토리 포맷팅 (최근 6턴)
         conversation_history = self._format_history(messages, limit=6)
 
         return self.response_prompt.format(
@@ -380,33 +331,27 @@ class SonAgent:
         max_tokens: int = 150,
         session_id: str = "default"
     ) -> str:
-        """
-        Three-Phase 대화:
-        Phase 1: Basic Reflection (SPT 필요 여부 판단)
-        Phase 1.5: SPT Planner (SPT=YES일 때만)
-        Phase 2: 응답 생성
-        """
+        """Three-phase conversation: Reflection -> SPT Planning (conditional) -> Response."""
         try:
             last_user_msg = self._extract_last_user_message(messages)
 
             # Phase 1: Basic Reflection
             reflection = await self._perform_basic_reflection(messages, last_user_msg, session_id)
 
-            # Phase 1.5: SPT Planning (조건부)
+            # Phase 1.5: SPT Planning (conditional)
             spt_result = None
             if reflection.get("spt_required", False):
                 spt_result = await self._perform_spt_planning(messages, last_user_msg, session_id)
 
-            # Phase 2: Response Generation (Gemini 우선)
-            logger.info(f"🎭 [PHASE2_START] session_id={session_id}, Generating response...")
+            # Phase 2: Response Generation
+            logger.info(f"[PHASE2_START] session_id={session_id}, Generating response...")
 
-            # Gemini 사용 가능하면 Gemini, 아니면 OpenAI
             if self.response_llm:
                 llm = self.response_llm
-                logger.info(f"🎭 [PHASE2] Using GPT-4o for response")
+                logger.info(f"[PHASE2] Using GPT-4o for response")
             else:
                 llm = self._create_llm(max_tokens, streaming=False, temperature=temperature)
-                logger.info(f"🎭 [PHASE2] Using OpenAI for response")
+                logger.info(f"[PHASE2] Using OpenAI for response")
 
             combined_prompt = self._build_response_prompt(reflection, spt_result, messages)
 
@@ -426,9 +371,8 @@ class SonAgent:
             raw_content = result.content.strip()
             cleaned_content = clean_gpt_response(raw_content)
 
-            logger.info(f"🎭 [PHASE2_COMPLETE] session_id={session_id}, response: '{cleaned_content}'")
+            logger.info(f"[PHASE2_COMPLETE] session_id={session_id}, response: '{cleaned_content}'")
 
-            # 세션 히스토리 저장
             history = self.get_session_history(session_id)
             if last_user_msg:
                 history.add_user_message(last_user_msg)
@@ -437,7 +381,7 @@ class SonAgent:
             return cleaned_content
 
         except Exception as e:
-            logger.error(f"❌ [Son] Error: {e}", exc_info=True)
+            logger.error(f"[Son] Error: {e}", exc_info=True)
             return "아버지, 다시 한 번만 말씀해주시겠어요?"
 
     async def chat_stream(
@@ -447,25 +391,20 @@ class SonAgent:
         max_tokens: int = 150,
         session_id: str = "default"
     ):
-        """
-        Three-Phase 스트리밍 대화:
-        Phase 1: Basic Reflection (SPT 필요 여부 판단)
-        Phase 1.5: SPT Planner (SPT=YES일 때만)
-        Phase 2: 응답 스트리밍
-        """
+        """Three-phase streaming conversation."""
         try:
             last_user_msg = self._extract_last_user_message(messages)
 
             # Phase 1: Basic Reflection
             reflection = await self._perform_basic_reflection(messages, last_user_msg, session_id)
 
-            # Phase 1.5: SPT Planning (조건부)
+            # Phase 1.5: SPT Planning (conditional)
             spt_result = None
             if reflection.get("spt_required", False):
                 spt_result = await self._perform_spt_planning(messages, last_user_msg, session_id)
 
             # Phase 2: Response Generation (Streaming)
-            logger.info(f"🎭 [PHASE2_START] session_id={session_id}, Generating streamed response...")
+            logger.info(f"[PHASE2_START] session_id={session_id}, Generating streamed response...")
 
             llm = self._create_llm(max_tokens, streaming=True, temperature=temperature)
 
@@ -490,21 +429,19 @@ class SonAgent:
                     yield chunk_text
 
             cleaned_response = clean_gpt_response(full_response)
-            logger.info(f"🎭 [PHASE2_COMPLETE] session_id={session_id}, streamed: '{cleaned_response}'")
+            logger.info(f"[PHASE2_COMPLETE] session_id={session_id}, streamed: '{cleaned_response}'")
 
-            # 세션 히스토리 저장
             history = self.get_session_history(session_id)
             if last_user_msg:
                 history.add_user_message(last_user_msg)
             history.add_ai_message(cleaned_response)
 
         except Exception as e:
-            logger.error(f"❌ [Son] Streaming error: {e}", exc_info=True)
+            logger.error(f"[Son] Streaming error: {e}", exc_info=True)
             for char in "아버지, 다시 한 번만 말씀해주시겠어요?":
                 yield char
 
     def _extract_chunk_text(self, chunk) -> str:
-        """스트리밍 청크에서 텍스트 추출"""
         if hasattr(chunk, "content"):
             if isinstance(chunk.content, list):
                 return "".join(part["text"] for part in chunk.content if isinstance(part, dict) and part.get("text"))
@@ -515,7 +452,6 @@ class SonAgent:
 
     @staticmethod
     def _extract_last_user_message(messages: List[Dict[str, str]]) -> str:
-        """마지막 유저 메시지 추출"""
         for msg in reversed(messages):
             if msg.get("role") == "user" and msg.get("content"):
                 return msg["content"].strip()

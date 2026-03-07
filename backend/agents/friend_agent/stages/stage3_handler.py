@@ -1,6 +1,4 @@
-"""
-Stage 3: 윤리 주제 탐구 대화
-"""
+"""Stage 3: Ethics topic exploration conversation."""
 from typing import Dict, Any
 import logging
 from langchain_openai import ChatOpenAI
@@ -16,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 class Stage3Handler:
-    """Stage 3: 윤리 주제 탐구 대화 핸들러"""
 
     def __init__(
         self,
@@ -32,42 +29,25 @@ class Stage3Handler:
         self.ethics_topics = ethics_topics
         self.persona_prompt = persona_prompt
 
-        # 모듈 초기화
         self.intent_detector = IntentDetector(analyzer, prompts)
         self.opinion_generator = OpinionGenerator(llm, prompts, ethics_topics, persona_prompt)
         self.clarification_generator = ClarificationGenerator(llm, prompts, ethics_topics, persona_prompt)
         self.response_generator = ResponseGenerator(llm, prompts, ethics_topics, persona_prompt)
 
     def handle(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Stage 3 처리: 윤리 주제 탐구 대화
-
-        로직:
-        1. 질문에 답을 함 → 다음 질문으로
-        2. 질문 이해 못함/모르겠다 → 재질문 제공 (variation 사용)
-        3. 5개 질문 다 응답하면 대화 끝
-
-        Args:
-            state: 현재 대화 상태
-
-        Returns:
-            업데이트된 대화 상태
-        """
         messages = state.get("messages", [])
-        current_question_index = state.get("current_question_index", 0)  # 현재 질문 인덱스 (0~4)
-        variation_index = state.get("variation_index", 0)  # 현재 질문의 변형 인덱스
-        need_reason_count = state.get("need_reason_count", 0)  # 이유 요청 횟수
-        unsure_count = state.get("unsure_count", 0)  # "왜 모르겠어?" 질문 횟수
+        current_question_index = state.get("current_question_index", 0)
+        variation_index = state.get("variation_index", 0)
+        need_reason_count = state.get("need_reason_count", 0)
+        unsure_count = state.get("unsure_count", 0)
 
-        logger.info(f"🔍 Stage 3 ENTRY - current_question_index: {current_question_index}, variation_index: {variation_index}, need_reason_count: {need_reason_count}, unsure_count: {unsure_count}")
+        logger.info(f"Stage 3 ENTRY - question_index: {current_question_index}, variation: {variation_index}, need_reason: {need_reason_count}, unsure: {unsure_count}")
 
-        # 최근 대화 컨텍스트
         recent_messages = messages[-8:] if len(messages) > 8 else messages
         context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in recent_messages])
 
-        # 사용자의 최근 답변
         user_message = messages[-1]["content"] if messages else ""
-        logger.info(f"🔍 User message: {user_message[:50]}...")
+        logger.info(f"User message: {user_message[:50]}...")
 
         questions = self.ethics_topics.get("questions", [])
         current_question_text = ""
@@ -75,30 +55,25 @@ class Stage3Handler:
             variations = questions[current_question_index].get("variations", [])
             current_question_text = variations[0] if variations else ""
 
-        # ✨ 사용자 의도 감지 (이전 대화 컨텍스트 전달)
-        logger.info(f"🔍 [Stage3] Detecting intent for user message: '{user_message}'")
+        logger.info(f"[Stage3] Detecting intent for: '{user_message}'")
         intent = self.intent_detector.detect(user_message, current_question=current_question_text, context=context)
         is_asking_clarification = (intent == "clarification")
-        logger.info(f"🔍 [Stage3] Intent detected: {intent}, is_asking_clarification: {is_asking_clarification}")
+        logger.info(f"[Stage3] Intent: {intent}")
 
-        # 응답 생성 및 다음 질문 인덱스 설정
-        next_question_index = current_question_index  # 기본값: 현재 질문 유지
-        is_sufficient = False  # 기본값
+        next_question_index = current_question_index
+        is_sufficient = False
 
         if intent == "ask_opinion":
-            # 사용자가 에이전트에게 의견 질문 → "잘 모르겠다" 표현하고 질문 다시
             response = self._handle_ask_opinion(user_message, current_question_index, context)
-            next_question_index = current_question_index  # 같은 질문 유지
+            next_question_index = current_question_index
             is_sufficient = False
-            logger.info(f"💬 [Stage3] User asked for agent's opinion - staying on Q{current_question_index}")
+            logger.info(f"[Stage3] User asked for opinion - staying on Q{current_question_index}")
         elif intent == "ask_why_unsure":
-            # ✨ "글세", "모르겠어", "어?", "?" → "왜 모르겠어?" 질문
-            # ⚠️ 최대 1번만! 이미 물어봤으면 다음 질문으로 넘어감
             unsure_count = state.get("unsure_count", 0)
             if unsure_count >= 1:
-                # 이미 한 번 "왜 모르겠어?" 물어봤으면 다음 질문으로 넘어감
-                logger.info(f"⚠️ [Stage3] Already asked why unsure once - moving to next question")
-                state["unsure_count"] = 0  # 리셋
+                # Already asked once - move to next question
+                logger.info("[Stage3] Already asked why unsure - moving on")
+                state["unsure_count"] = 0
                 state["variation_index"] = 0
                 is_sufficient = current_question_index >= 4
                 response, next_question_index = self.response_generator.generate_with_topic(
@@ -108,24 +83,21 @@ class Stage3Handler:
                     answered_count=current_question_index + 1
                 )
             else:
-                # 첫 번째 "왜 모르겠어?" 질문
                 response = self._handle_ask_why_unsure(user_message, current_question_index, context)
-                next_question_index = current_question_index  # 같은 질문 계속
+                next_question_index = current_question_index
                 is_sufficient = False
-                state["unsure_count"] = unsure_count + 1  # 카운터 증가
-                logger.info(f"⚠️ [Stage3] User is unsure - asking why (staying on Q{current_question_index})")
+                state["unsure_count"] = unsure_count + 1
+                logger.info(f"[Stage3] User unsure - asking why (Q{current_question_index})")
         elif intent == "ask_concept":
-            # 사용자가 개념 질문 → 개념 설명 + 원래 질문 반복
             response = self._handle_concept_explanation(user_message, current_question_index, context)
-            next_question_index = current_question_index  # 같은 질문 유지
+            next_question_index = current_question_index
             is_sufficient = False
-            logger.info(f"✅ [Stage3] User asked for concept explanation - staying on Q{current_question_index}")
+            logger.info(f"[Stage3] Concept explanation requested (Q{current_question_index})")
         elif intent == "need_reason":
-            # ⚠️ 이유 요청은 최대 1번만! 이미 물어봤으면 다음 질문으로 넘어감
             if need_reason_count >= 1:
-                # 이미 한 번 이유를 물어봤으면 다음 질문으로 넘어감
-                logger.info(f"⚠️ [Stage3] Already asked for reason once - treating as answer and moving on")
-                state["need_reason_count"] = 0  # 리셋
+                # Already asked once - treat as answer and move on
+                logger.info("[Stage3] Already asked for reason - moving on")
+                state["need_reason_count"] = 0
                 state["variation_index"] = 0
                 is_sufficient = current_question_index >= 4
                 response, next_question_index = self.response_generator.generate_with_topic(
@@ -135,71 +107,53 @@ class Stage3Handler:
                     answered_count=current_question_index + 1
                 )
             else:
-                # 첫 번째 이유 요청
                 response = self._handle_need_reason(user_message, current_question_index, context, current_question_text)
                 next_question_index = current_question_index
                 is_sufficient = False
-                state["need_reason_count"] = need_reason_count + 1  # 카운터 증가
-                logger.info(f"⚠️ [Stage3] Asking for reason (1st time) - staying on Q{current_question_index}")
+                state["need_reason_count"] = need_reason_count + 1
+                logger.info(f"[Stage3] Asking for reason (1st time, Q{current_question_index})")
         elif is_asking_clarification:
-            # 사용자가 질문 이해 못함 → variations 배열에서 다음 변형 선택
-            # 변형 인덱스 증가
             variation_index += 1
-            logger.info(f"⚠️ [Stage3] User needs clarification - using variation #{variation_index} for Q{current_question_index}")
+            logger.info(f"[Stage3] Clarification needed - variation #{variation_index} for Q{current_question_index}")
 
-            # ✨ variation을 최대 2번까지만 보여주고, 그 다음에는 다음 질문으로 넘어감
             MAX_VARIATIONS = 2
             if variation_index >= MAX_VARIATIONS:
-                # 2번 이상 모르겠다고 했으면 다음 질문으로 넘어감
-                logger.info(f"⚠️ [Stage3] Max variations ({MAX_VARIATIONS}) reached - moving to next question")
-                state["variation_index"] = 0  # 리셋
-
-                # 5개 질문 완료 여부 체크
+                logger.info(f"[Stage3] Max variations reached - moving to next question")
+                state["variation_index"] = 0
                 is_sufficient = current_question_index >= 4
-
-                # 다음 질문으로 이동
                 response, next_question_index = self.response_generator.generate_with_topic(
                     is_sufficient=is_sufficient,
                     context=context,
                     user_message=user_message,
                     answered_count=current_question_index + 1
                 )
-                logger.info(f"✅ [Stage3] Skipping to next question: Q{current_question_index} → Q{next_question_index}")
             else:
-                # variation 질문 생성
                 response = self.clarification_generator.generate(user_message, current_question_index, context, variation_index)
-                next_question_index = current_question_index  # 같은 질문 계속
-                is_sufficient = False  # 아직 끝나지 않음
+                next_question_index = current_question_index
+                is_sufficient = False
                 state["variation_index"] = variation_index
-                logger.info(f"⚠️ [Stage3] Keeping same question: current_question_index={current_question_index}, next_question_index={next_question_index}")
         elif intent == "ask_explanation":
-            # ✨ 에이전트가 한 말에 대해 "왜?"라고 설명 요청
             response = self._handle_ask_explanation(user_message, current_question_index, context)
-            next_question_index = current_question_index  # 같은 질문 계속
+            next_question_index = current_question_index
             is_sufficient = False
-            logger.info(f"💡 [Stage3] User asked for explanation - staying on Q{current_question_index}")
+            logger.info(f"[Stage3] Explanation requested (Q{current_question_index})")
         else:
-            # 일반 대답 → 다음 질문으로
-            logger.info(f"✅ [Stage3] User answered question #{current_question_index} (Q{current_question_index + 1}/5)")
+            logger.info(f"[Stage3] User answered Q{current_question_index + 1}/5")
 
-            # 변형 인덱스 및 카운터 리셋 (답변을 했으므로)
             state["variation_index"] = 0
             state["need_reason_count"] = 0
             state["unsure_count"] = 0
 
-            # 5가지 질문을 모두 했는지 체크
-            is_sufficient = current_question_index >= 4  # 0~4 = 5개
-            logger.info(f"🔍 [Stage3] Question progress: {current_question_index + 1}/5 questions asked, is_sufficient={is_sufficient}")
+            is_sufficient = current_question_index >= 4
+            logger.info(f"[Stage3] Progress: {current_question_index + 1}/5, sufficient={is_sufficient}")
 
-            # 다음 질문 또는 마무리
-            logger.info(f"🔍 [Stage3] Calling response_generator with answered_count={current_question_index + 1}")
             response, next_question_index = self.response_generator.generate_with_topic(
                 is_sufficient=is_sufficient,
                 context=context,
                 user_message=user_message,
                 answered_count=current_question_index + 1
             )
-            logger.info(f"✅ [Stage3] Moving to next question: current_question_index={current_question_index} → next_question_index={next_question_index}")
+            logger.info(f"[Stage3] Next question: Q{current_question_index} -> Q{next_question_index}")
 
 
         state["stage"] = "stage3"
@@ -210,20 +164,17 @@ class Stage3Handler:
         state["messages"].append({"role": "assistant", "content": response})
         state["message_count"] = state.get("message_count", 0) + 1
 
-        logger.info(f"🔍 [Stage3] FINAL STATE - current_question_index={next_question_index}, should_end={is_sufficient}, variation_index={state.get('variation_index', 0)}")
-        logger.info(f"🔍 [Stage3] Response: {response[:100]}...")
+        logger.info(f"[Stage3] FINAL - question_index={next_question_index}, should_end={is_sufficient}")
+        logger.info(f"[Stage3] Response: {response[:100]}...")
 
         return state
 
     def _handle_concept_explanation(self, user_message: str, question_index: int, context: str) -> str:
-        """
-        개념 설명 요청 처리 → 개념 설명 + 원래 질문 반복
-        """
         from utils import format_prompt
 
         questions = self.ethics_topics.get("questions", [])
         if question_index >= len(questions):
-            logger.error(f"❌ Invalid question_index: {question_index}")
+            logger.error(f"Invalid question_index: {question_index}")
             return "미안, 질문을 찾을 수 없어."
 
         current_question_data = questions[question_index]
@@ -241,16 +192,14 @@ class Stage3Handler:
         try:
             result = self.llm.invoke(concept_prompt)
             response = result.content.strip()
-            logger.info(f"✅ [Stage3] Generated concept explanation for: {user_message[:30]}...")
+            logger.info(f"[Stage3] Generated concept explanation for: {user_message[:30]}...")
             return response
         except Exception as e:
-            logger.error(f"❌ Error generating concept explanation: {e}")
+            logger.error(f"Error generating concept explanation: {e}")
             return f"미안, 설명하는 데 문제가 있었어. 다시 질문해줄래? {original_question}"
 
     def _handle_need_reason(self, user_message: str, question_index: int, context: str, current_question: str) -> str:
-        """
-        사용자가 이유 없이 입장만 말했을 때 후속 질문을 생성
-        """
+        """Generate follow-up asking for reasoning when user only gave a stance."""
         from utils import format_prompt
 
         prompt = format_prompt(
@@ -265,13 +214,11 @@ class Stage3Handler:
             result = self.llm.invoke(prompt)
             return result.content.strip()
         except Exception as e:
-            logger.error(f"❌ Error generating reason follow-up: {e}")
+            logger.error(f"Error generating reason follow-up: {e}")
             return "그렇구나. 근데 왜 그렇게 생각해?"
 
     def _handle_ask_opinion(self, user_message: str, question_index: int, context: str) -> str:
-        """
-        의견 요청 처리 → "잘 모르겠다" 표현하고 질문 다시
-        """
+        """Respond with "I don't know" and redirect question back to user."""
         from utils import format_prompt
 
         questions = self.ethics_topics.get("questions", [])
@@ -296,13 +243,11 @@ class Stage3Handler:
             result = self.llm.invoke(prompt)
             return result.content.strip().strip('"')
         except Exception as e:
-            logger.error(f"❌ Error generating ask_opinion response: {e}")
+            logger.error(f"Error generating ask_opinion response: {e}")
             return f"나도 잘 모르겠어, 그래서 물어보는 거야. {original_question}"
 
     def _handle_ask_why_unsure(self, user_message: str, question_index: int, context: str) -> str:
-        """
-        "글세", "모르겠어", "어?", "?" 처리 → "왜 모르겠어?" 질문
-        """
+        """Handle uncertain responses by asking why the user is unsure."""
         from utils import format_prompt
 
         questions = self.ethics_topics.get("questions", [])
@@ -328,16 +273,14 @@ class Stage3Handler:
         try:
             result = self.llm.invoke(prompt)
             response = result.content.strip().strip('"')
-            logger.info(f"✅ [Stage3] Generated ask_why_unsure response for: {user_message[:30]}...")
+            logger.info(f"[Stage3] Generated ask_why_unsure response for: {user_message[:30]}...")
             return response
         except Exception as e:
-            logger.error(f"❌ Error generating ask_why_unsure response: {e}")
+            logger.error(f"Error generating ask_why_unsure response: {e}")
             return f"아직 잘 모르겠구나. 어떤 부분이 헷갈려?"
 
     def _handle_ask_explanation(self, user_message: str, question_index: int, context: str) -> str:
-        """
-        에이전트가 한 말에 대해 "왜?"라고 설명 요청 처리
-        """
+        """Handle user asking "why?" about something the agent said."""
         from utils import format_prompt
 
         questions = self.ethics_topics.get("questions", [])
@@ -362,5 +305,5 @@ class Stage3Handler:
             result = self.llm.invoke(prompt)
             return result.content.strip().strip('"')
         except Exception as e:
-            logger.error(f"❌ Error generating ask_explanation response: {e}")
+            logger.error(f"Error generating ask_explanation response: {e}")
             return f"그런 질문을 한 건 여러 관점이 있어서야. 넌 어떻게 생각해?"

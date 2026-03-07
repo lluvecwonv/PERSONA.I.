@@ -1,6 +1,4 @@
-"""
-Database service for conversation history persistence
-"""
+"""Database service for conversation history persistence."""
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 import logging
@@ -12,10 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 class DatabaseService:
-    """대화 기록 영구 저장 서비스"""
 
     def __init__(self):
-        """데이터베이스 세션 메이커 초기화"""
         self.SessionMaker = get_session_maker()
         logger.info("DatabaseService initialized")
 
@@ -28,23 +24,8 @@ class DatabaseService:
         covered_topics: Optional[List[str]] = None,
         metadata: Optional[Dict[str, Any]] = None
     ) -> bool:
-        """
-        대화 턴을 데이터베이스에 저장
-
-        Args:
-            session_id: 세션 ID
-            user_message: 사용자 메시지
-            assistant_response: 어시스턴트 응답
-            stage: 현재 스테이지 (stage1, stage2, stage3, end)
-            covered_topics: 다룬 주제 리스트
-            metadata: 추가 메타데이터
-
-        Returns:
-            성공 여부
-        """
         db: Session = self.SessionMaker()
         try:
-            # ConversationHistory 레코드 생성
             conversation = ConversationHistory(
                 session_id=session_id,
                 user_message=user_message,
@@ -75,33 +56,17 @@ class DatabaseService:
         covered_topics_count: int,
         is_completed: bool = False
     ) -> bool:
-        """
-        세션 메타데이터 업데이트
-
-        Args:
-            session_id: 세션 ID
-            stage: 현재 스테이지
-            total_messages: 총 메시지 수
-            covered_topics_count: 다룬 주제 수
-            is_completed: 완료 여부
-
-        Returns:
-            성공 여부
-        """
         db: Session = self.SessionMaker()
         try:
-            # 기존 세션 조회
             session = db.query(ConversationSession).filter_by(session_id=session_id).first()
 
             if session:
-                # 기존 세션 업데이트
                 session.last_updated_at = datetime.utcnow()
                 session.final_stage = stage
                 session.total_messages = total_messages
                 session.covered_topics_count = covered_topics_count
                 session.is_completed = 1 if is_completed else 0
             else:
-                # 새 세션 생성
                 session = ConversationSession(
                     session_id=session_id,
                     final_stage=stage,
@@ -124,15 +89,6 @@ class DatabaseService:
             db.close()
 
     def get_session_history(self, session_id: str) -> List[Dict[str, Any]]:
-        """
-        특정 세션의 대화 기록 조회
-
-        Args:
-            session_id: 세션 ID
-
-        Returns:
-            대화 기록 리스트 (시간순 정렬)
-        """
         db: Session = self.SessionMaker()
         try:
             conversations = (
@@ -163,15 +119,6 @@ class DatabaseService:
             db.close()
 
     def get_session_info(self, session_id: str) -> Optional[Dict[str, Any]]:
-        """
-        세션 메타데이터 조회
-
-        Args:
-            session_id: 세션 ID
-
-        Returns:
-            세션 정보 딕셔너리 또는 None
-        """
         db: Session = self.SessionMaker()
         try:
             session = db.query(ConversationSession).filter_by(session_id=session_id).first()
@@ -196,12 +143,6 @@ class DatabaseService:
             db.close()
 
     def get_all_session_ids(self) -> List[str]:
-        """
-        모든 세션 ID 조회
-
-        Returns:
-            세션 ID 리스트
-        """
         db: Session = self.SessionMaker()
         try:
             sessions = db.query(ConversationSession.session_id).all()
@@ -213,21 +154,9 @@ class DatabaseService:
             db.close()
 
     def delete_session(self, session_id: str) -> bool:
-        """
-        세션과 관련된 모든 데이터 삭제
-
-        Args:
-            session_id: 세션 ID
-
-        Returns:
-            성공 여부
-        """
         db: Session = self.SessionMaker()
         try:
-            # 대화 기록 삭제
             db.query(ConversationHistory).filter_by(session_id=session_id).delete()
-
-            # 세션 메타데이터 삭제
             db.query(ConversationSession).filter_by(session_id=session_id).delete()
 
             db.commit()
@@ -243,17 +172,11 @@ class DatabaseService:
             db.close()
 
     def clear_all_sessions(self) -> int:
-        """
-        모든 세션 및 대화 기록을 삭제하고, 삭제된 세션 수를 반환
-        개발/테스트 용도
-        """
+        """Delete all sessions and conversations. For dev/test use."""
         db: Session = self.SessionMaker()
         try:
-            # 세션 개수 파악
             total_sessions = db.query(ConversationSession).count()
-            # 대화 기록 삭제
             db.query(ConversationHistory).delete()
-            # 세션 메타데이터 삭제
             db.query(ConversationSession).delete()
             db.commit()
             logger.info(f"Deleted all sessions and conversations: {total_sessions} sessions")
