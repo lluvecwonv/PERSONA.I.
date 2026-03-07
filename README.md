@@ -137,4 +137,9 @@ Correct: "Right, it could really help" (positive) ← intent aligned
 ### 7. SPT Agent
 
 **Framework**: Social Perspective Taking — guides users to consider multiple stakeholder viewpoints across ethical dilemmas.
-# PERSONA.I.
+
+---
+
+### Demo
+
+Try it live: [https://persona-i.com/episode/1?idx=554](https://persona-i.com/episode/1?idx=554)

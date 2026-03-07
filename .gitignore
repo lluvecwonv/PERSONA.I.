@@ -1,19 +1,9 @@
-# 홈 디렉토리 전체를 무시하고 필요한 것만 추적
 /*
 !.gitignore
 !backend/
-!BE/
-!dataset/
+!src/
 !README.md
 !requirements.txt
-!docker-compose.yml
-!Dockerfile
-!railway.toml
-!CONTEXT_FIX_SUMMARY.md
-
-# Desktop 폴더 전체 무시
-Desktop/
-
 
 # Python
 __pycache__/
@@ -37,6 +27,7 @@ wheels/
 .installed.cfg
 *.egg
 venv/
+.venv/
 ENV/
 env/
 .env
@@ -55,76 +46,17 @@ docker-compose.override.yml
 # OS
 .DS_Store
 Thumbs.db
-.localized
-.Trash/
 
-# 로그
+# Logs
 *.log
 logs/
 
-# 데이터베이스
+# Database
 *.db
 *.sqlite
 *.sqlite3
 
-# Node (프론트엔드)
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# 빌드 결과물
-dist/
-build/
-
-# 테스트
+# Test
 .coverage
 htmlcov/
 .pytest_cache/
-
-# SSH 키 및 개인 설정 파일 (절대 커밋 금지!)
-id_rsa
-id_rsa.pub
-github_actions_key
-github_actions_key.pub
-.ssh/
-.zshrc
-.zprofile
-.zsh_history
-.zsh_sessions/
-.cache/
-.claude/
-.claude.json
-.claude.json.backup
-.cloudflared/
-.codex/
-.config/
-.cursor/
-.docker/
-.gemini/
-.lesshst
-.npm/
-.python_history
-.warp/
-.CFUserTextEncoding
-
-# 개인 문서 및 파일
-Documents/
-Downloads/
-Movies/
-Music/
-Pictures/
-Public/
-Library/
-ShareMouse/
-*.png
-*.pdf
-*.pptx
-*.hwp
-*.numbers
-*.pth
-*.csv
-*.json
-*.app/
-results/
-SynologyAssistant.app/
