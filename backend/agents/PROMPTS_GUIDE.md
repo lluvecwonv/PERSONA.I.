@@ -1,22 +1,37 @@
 # Prompt Engineering Guide
 
-This document describes the prompt design methodology used across the Moral Agent system. All agents use externalized prompt files loaded at runtime via `load_all_prompts()`.
+This document describes the prompt design methodology used across the Moral Agent system. All agents use externalized prompt files loaded at runtime.
 
 ## Agent Categories
 
-### Facilitator Agents (Artist Apprentice, Friend)
+### Facilitator Agent (Artist Apprentice, Friend)
 
-These agents guide ethical dialogue without taking a stance. They use a **modular pipeline architecture** where each conversational action (intent detection, acknowledgment, question generation) has its own dedicated prompt.
+A single unified `FacilitatorAgent` class parameterized by `persona_type` ("artist_apprentice" | "friend"). Guides ethical dialogue without taking a stance, using a **3-phase architecture**:
 
-**Pipeline per turn:**
-1. Intent Detection - classify user's response type
-2. Acknowledgment Generation - empathetic reflection of what user said
-3. Action Selection - decide whether to explain, rephrase, transition, or explore
-4. Response Generation - produce final output using the selected action prompt
+**Phase 1: Self-Reflection** (cheap/fast model - Gemini Flash)
+- Colleague1-style multi-step self-reflection
+- 5 steps: character identity, dialogue principles check, previous question analysis, stage/intent classification, SPT necessity check
+- Outputs JSON: `{ stage, action, intent, spt_required, context_analysis, forbidden_questions, suggested_questions }`
+
+**Phase 1.5: SPT Planning** (cheap/fast model - conditional)
+- Only invoked when Phase 1 determines `spt_required: true`
+- Stakeholder perspective rotation across 5 categories
+- 5-step self-questioning: identify stakeholders, analyze emotions, find blind spots, design strategic question
+- Outputs JSON: `{ stakeholders, empathy_analysis, blind_spot, strategic_question }`
+
+**Phase 2: Response Generation** (main model - GPT-4o)
+- Self-reflection checks before output (persona, relationship, speech style, neutrality, repetition)
+- Intent-specific response rules built into the prompt
+- Question variation enforcement
+
+**3-Stage Conversation Flow:**
+1. **Stage 1** - Character/situation setup (casual greetings, life description)
+2. **Stage 2** - AI stance question (introduce the ethical dilemma)
+3. **Stage 3** - Ethics question loop (5 Floridi values: beneficence, nonmaleficence, autonomy, justice, explicability)
 
 ### Persona Agents (Colleague 1/2, Jangmo, Son)
 
-Fine-tuned models with a **two-phase reasoning architecture**:
+Models with a **two-phase reasoning architecture**:
 1. **Reflection Phase** - internal reasoning with self-verification checklist
 2. **Response Phase** - generate character-consistent output grounded in reflection
 
@@ -34,57 +49,39 @@ Most prompts use explicit constraint lists to control output behavior. Constrain
 - **Length limits** - word or sentence count caps
 - **Style rules** - speech register, punctuation, tone
 
-Example from `stage2_first_question.txt`:
-```
-Prohibited:
-- Do NOT infer user's opinion (e.g., "you seem to think...")
-- Do NOT use formal speech (no -yo, -sumnida endings)
-- Do NOT exceed 2-3 sentences
-```
-
 ### 2. Good/Bad Example Pairs
 
-Generation prompts include paired examples showing correct vs. incorrect output. This technique is used heavily in acknowledgment and question generation prompts to prevent common failure modes like:
-- Generic empathy ("that must be hard") instead of content-specific reflection
+Generation prompts include paired examples showing correct vs. incorrect output. This prevents common failure modes like:
+- Generic empathy instead of content-specific reflection
 - Speculating about user's opinion instead of asking
 - Repeating the same question verbatim
 
-### 3. Few-Shot Classification
+### 3. Multi-Step Self-Verification
 
-Intent detection prompts use extensive labeled examples (5-10 per category) with edge cases. Classification prompts output a single token label.
-
-Categories vary by stage:
-- **Stage 2**: `opinion`, `dont_know`, `unclear`
-- **Stage 3**: `answer`, `need_reason`, `question`, `off_topic`, `ask_opinion`, `dont_understand`, `uncertain`, `closing`
-
-### 4. Multi-Step Self-Verification
-
-Persona agent reflection prompts use an 8-section checklist framework:
+Reflection prompts use a structured checklist framework:
 1. Character identity confirmation
-2. Ethical stance alignment check
-3. Dialogue principle review
-4. Failure mode detection (Academic Critic, Aggressive Gatekeeper, Passive Observer, Repetitive Robot)
-5. Previous question analysis (repetition prevention)
-6. User utterance type classification
-7. SPT necessity assessment (5-question YES/NO decision tree)
-8. Context analysis output (JSON)
+2. Dialogue principle compliance check
+3. Previous question analysis (repetition prevention)
+4. Stage determination + intent classification
+5. SPT necessity assessment (5-question YES/NO decision tree)
+6. Context analysis output (JSON)
 
-### 5. Perspective Rotation (SPT Planning)
+### 4. Perspective Rotation (SPT Planning)
 
 The SPT planner prompt enforces stakeholder diversity across turns by requiring:
-- Selection from predefined stakeholder categories (Artists, Apprentices, Audiences, Art Market, Tradition, Ethics)
+- Selection from predefined stakeholder categories (Beneficiaries, Affected parties, Autonomy holders, Justice seekers, Accountability holders)
 - No category reuse across consecutive turns
-- 5-step self-questioning: identify stakeholders, analyze emotions, check stance alignment, find blind spots, formulate strategic question
+- 5-step self-questioning: identify stakeholders, analyze emotions, find blind spots, formulate strategic question
 
-### 6. Verbatim Copying Requirement
+### 5. Verbatim Copying Requirement
 
-Certain prompts (transition, guide-back, clarification) require the model to copy a provided question exactly without modification. This ensures conversation consistency when the system needs to re-ask a specific ethics question.
+Certain response rules (advance_question, clarification) require the model to copy a provided question exactly without modification. This ensures conversation consistency when the system needs to ask a specific ethics question.
 
-### 7. Anti-Repetition Mechanisms
+### 6. Anti-Repetition Mechanisms
 
 Multiple layers prevent repetitive responses:
+- **Forbidden questions list** passed from reflection phase
 - **Variation libraries** in prompt files (6+ phrasings for common expressions)
-- **Forbidden previous expressions** passed as context
 - **Reflection-phase repetition checks** analyzing conversation history
 - **Question variation sets** in `ethics_topics.json` (3 variations per topic)
 
@@ -92,32 +89,23 @@ Multiple layers prevent repetitive responses:
 
 ## Prompt Inventory
 
-### Facilitator Agents (Friend / Artist Apprentice)
+### Facilitator Agent (Friend / Artist Apprentice)
 
-Each has 18 prompt files + 1 JSON data file:
+Shared prompts (3 files):
 
 | File | Type | Purpose |
 |---|---|---|
-| `persona.txt` | System | Character definition, ethical framework mapping, conversation rules |
-| `stage1_character_check.txt` | Classifier | Binary check if user provided concrete life details |
-| `stage2_acknowledgment.txt` | Generator | Empathetic response reflecting user's specific words |
-| `stage2_first_question.txt` | Generator | Initial ethics question with brief acknowledgment |
-| `stage2_detect_intent.txt` | Classifier | Classify user stance (opinion / dont_know / unclear) |
-| `stage2_detect_explanation.txt` | Classifier | Detect if user wants explanation (explain / continue) |
-| `stage2_explanation.txt` | Generator | Explain the AI service concept without technical jargon |
-| `stage2_rephrase.txt` | Generator | Rephrase question when user's answer is unclear |
-| `stage2_to_stage3_transition.txt` | Generator | Bridge response transitioning to ethics exploration |
-| `stage3_ask_opinion.txt` | Generator | Redirect when user asks for agent's opinion (express uncertainty) |
-| `stage3_ask_why_unsure.txt` | Generator | Probe reasoning behind user's uncertainty |
-| `stage3_clarification.txt` | Generator | Simplify question when user doesn't understand |
-| `stage3_closing.txt` | Generator | Warm conversation closing |
-| `stage3_concept_explanation.txt` | Generator | Define ethics concept in accessible language |
-| `stage3_explain_reasoning.txt` | Generator | Explain reasoning through stakeholder perspectives |
-| `stage3_guide_back.txt` | Generator | Redirect off-topic conversation to ethics framework |
-| `stage3_request_reason.txt` | Generator | Ask user to explain reasoning behind stated opinion |
-| `detect_intent.txt` | Classifier | 8-category intent classification for Stage 3 |
-| `ai_opinion.txt` | Generator | Express uncertainty when asked for opinion |
-| `ethics_topics.json` | Data | 5 ethics topics (beneficence, nonmaleficence, autonomy, justice, explicability) with 3 question variations each |
+| `reflection_prompt.txt` | Reasoning | 5-step self-reflection: identity, principles, repetition check, intent classification, SPT check |
+| `spt_planner_prompt.txt` | Planning | Stakeholder perspective rotation and strategic question design |
+| `response_prompt.txt` | Generator | Self-reflection checks + intent-specific response rules + question variation |
+
+Per-persona assets (3 files each):
+
+| File | Type | Purpose |
+|---|---|---|
+| `persona.txt` | System | Character definition, ethical framework, conversation rules, speech style |
+| `config.json` | Data | Greetings, stage questions, fallback messages (7 keys) |
+| `ethics_topics.json` | Data | 5 ethics topics with 3 question variations each |
 
 ### Persona Agents (Colleague 1/2, Jangmo, Son)
 
